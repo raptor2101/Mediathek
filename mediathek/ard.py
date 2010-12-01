@@ -186,7 +186,7 @@ class ARDMediathek(Mediathek):
       date = self.regex_Date.search(metaInfoPage).group();
       date = time.strptime(date,"%d.%m.%y");
     except:
-      date = time.time();
+      date = None;
       
     return DisplayObject(title,category,pictureLink,description,[],True, date);
     
