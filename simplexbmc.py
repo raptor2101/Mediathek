@@ -36,7 +36,7 @@ class SimpleXbmcGui(object):
       xbmc.output("[%s]: %s" % (__plugin__, msg.encode('utf8')))
       
   def buildVideoLink(self, displayObject, mediathek):
-    if(displayObject.subTitle == ""):
+    if(displayObject.subTitle == "" or displayObject.subTitle == displayObject.title):
       title = transformHtmlCodes(displayObject.title);
     else:
       title = transformHtmlCodes(displayObject.title +" - "+ displayObject.subTitle);
