@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------LicenseHeader--------------
-# plugin.video.Mediathek - Gives acces to the most video-platforms from german public service broadcaster
+# plugin.video.mediathek - Gives acces to the most video-platforms from german public service broadcaster
 # Copyright (C) 2010  Raptor 2101 [raptor2101@gmx.de]
 #
 # This program is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ import urllib
 from simplexbmc import SimpleXbmcGui
 from mediathek.factory import MediathekFactory
 from simplexml import XmlReader;
-__plugin__ = "Mediathek"
+__plugin__ = "mediathek"
 
 gui = SimpleXbmcGui();
 

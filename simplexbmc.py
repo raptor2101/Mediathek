@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #-------------LicenseHeader--------------
-# plugin.video.Mediathek - display german mediathekes
+# plugin.video.mediathek - display german mediathekes
 # Copyright (C) 2010  Raptor 2101 [raptor2101@gmx.de]
 #
 # This program is free software: you can redistribute it and/or modify
@@ -90,7 +90,7 @@ class SimpleXbmcGui(object):
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True)
 
   def listAvaibleMediathekes(self, mediathekNames):
-    rootPath = os.path.join(os.getcwd(),"resources/logos/");
+    rootPath = os.path.join(xbmcaddon.getAddonInfo('path'),"resources/logos/");
     for name in mediathekNames:
       listItem=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=os.path.join(rootPath,name+".jpg"))
 	    
