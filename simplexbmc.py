@@ -22,7 +22,7 @@ __plugin__ = "Mediathek"
 
 class SimpleXbmcGui(object):
   def __init__(self):
-    self.settings = xbmcaddon.Addon(id='plugin.video.Mediathek');
+    self.settings = xbmcaddon.Addon(id='plugin.video.mediathek');
     self.quality = int(xbmcplugin.getSetting(int(sys.argv[1]), "quality" ));
     self.directAccess = xbmcplugin.getSetting(int(sys.argv[1]), "mode" ) == "0";
     self.preferedStreamTyp = int(xbmcplugin.getSetting(int(sys.argv[1]), "preferedStreamType"));
@@ -90,7 +90,7 @@ class SimpleXbmcGui(object):
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True)
 
   def listAvaibleMediathekes(self, mediathekNames):
-    rootPath = os.path.join(xbmcaddon.getAddonInfo('path'),"resources/logos/");
+    rootPath = os.path.join(self.settings.getAddonInfo('path'),"resources/logos/");
     for name in mediathekNames:
       listItem=xbmcgui.ListItem(name, iconImage="DefaultFolder.png",thumbnailImage=os.path.join(rootPath,name+".jpg"))
 	    
