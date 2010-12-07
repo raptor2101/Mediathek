@@ -13,14 +13,14 @@
    <provides>video</provides>
   </extension>
   <extension point="xbmc.addon.metadata">
-    <summary>Gives acces to the most video-platforms from german public service broadcaster</summary>
     <summary lang="de">Ermöglicht den zugriff auf alle deutschen Mediatheken der öffentlich Rechtlichen</summary>
-    <description>Gives acces to the most video-platforms from german public service broadcaster.
-Currently implemented:
-  3Sat, ARD, ZDF, ARTE
-</description>
+    <summary lang="en">Gives acces to the most video-platforms from german public service broadcaster</summary>
     <description lang="de">Ermöglicht den zugriff auf alle deutschen Mediatheken der öffentlich Rechtlichen.
 Aktuell implementiert sind:
+  3Sat, ARD, ZDF, ARTE
+</description>
+    <description lang="en">Gives acces to the most video-platforms from german public service broadcaster.
+Currently implemented:
   3Sat, ARD, ZDF, ARTE
 </description>
     <platform>all</platform>
