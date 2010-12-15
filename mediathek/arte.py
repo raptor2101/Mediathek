@@ -127,7 +127,7 @@ class ARTEMediathek(Mediathek):
         self.gui.log(urlString);
         stringArray = urlString.split("MP4:");
         
-        links[quality] = SimpleLink("%s playpath=MP4:%s"%(stringArray[0],stringArray[1]),0);
+        links[quality] = SimpleLink("%s playpath=MP4:%s swfUrl=http://videos.arte.tv/blob/web/i18n/view/player_11-3188338-data-4836231.swf swfVfy=1"%(stringArray[0],stringArray[1]),0);
         if(len(links) > 0):
           self.gui.log("Picture: "+picture);
           self.gui.buildVideoLink(DisplayObject(title,"",picture,desc,links,True,date),self);
