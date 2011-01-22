@@ -108,6 +108,7 @@ class ZDFMediathek(Mediathek):
     return True;
   
   def searchVideo(self, searchText):
+    self.gui.log("searchVideo: "+searchText);
     values ={'sucheBtn.x':'25',
              'sucheBtn.y':'8',
              'sucheText': searchText}
