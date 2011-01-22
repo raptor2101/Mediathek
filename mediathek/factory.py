@@ -31,7 +31,7 @@ class MediathekFactory(object):
        BayerischesFSMediathek.name():BayerischesFSMediathek,
       }
   def getAvaibleMediathekTypes(self):
-    return self.avaibleMediathekes.keys()
+    return sorted(self.avaibleMediathekes.keys())
 
   def getMediathek(self,mediathekName, gui):
     return self.avaibleMediathekes[mediathekName](gui);
