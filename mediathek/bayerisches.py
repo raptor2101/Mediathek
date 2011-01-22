@@ -57,9 +57,13 @@ class BayerischesFSMediathek(Mediathek):
         TreeNode("0","Plugin Broken, Sry ;)","http://LoadAll",False),
       );
       return;
+    displayItems=[];
     for itemNode in self.xml_cont.getElementsByTagName("ausstrahlung"):
-      self.extractVideoInformation(itemNode);
-  
+      displayItem = self.extractVideoInformation(itemNode);
+      if(displayItem is not None):
+        displayItems.append(displayItem);
+    for displayItem in sorted(displayItems, key = lambda item:item.date, reverse=True):
+      self.gui.buildVideoLink(displayItem,self);
   def readText(self,node,textNode):
     try:
       node = node.getElementsByTagName(textNode)[0].firstChild;
@@ -133,12 +137,12 @@ class BayerischesFSMediathek(Mediathek):
     try:
       videos = itemNode.getElementsByTagName("videos")[0];
       if not videos.hasChildNodes():
-        return;
+        return None;
 
       for videotag in videos.getElementsByTagName("video"):
         print videotag.attributes;
         if (not videotag.hasAttribute("host")):
-          return;
+          return None;
         link = "rtmp://" + videotag.attributes["host"].value + "/" + videotag.attributes["application"].value + "/";
         if (videotag.attributes["groesse"].value == "small"):
             links[0] = SimpleLink(link+videotag.attributes["stream"].value, 0);
@@ -147,7 +151,8 @@ class BayerischesFSMediathek(Mediathek):
         if (videotag.attributes["groesse"].value == "xlarge"):
             links[2] = SimpleLink(link+videotag.attributes["stream"].value, 0);
     except:
-      return;
-
-    self.gui.buildVideoLink(DisplayObject(title,subtitle,picture,description,links,True, pubDate),self);
+      return None;
+    
+    return DisplayObject(title,subtitle,picture,description,links,True, pubDate)
+    
       
