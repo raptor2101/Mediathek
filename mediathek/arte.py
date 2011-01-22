@@ -39,7 +39,8 @@ class ARTEMediathek(Mediathek):
   @classmethod
   def name(self):
     return "ARTE";
-  
+  def isSearchable(self):
+    return True;
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     self.rootLink = "http://videos.arte.tv";
@@ -59,6 +60,7 @@ class ARTEMediathek(Mediathek):
     self.replace_html = re.compile("<.*?>");
     
     self.baseXmlLink = self.rootLink+"/de/do_delegate/videos/global-%s,view,asPlayerXml.xml"
+    self.searchLink = self.rootLink+"/de/do_search/videos/suche?q=";
     
   def buildPageMenu(self, link):
     self.gui.log("buildPageMenu: "+link);
@@ -66,6 +68,9 @@ class ARTEMediathek(Mediathek):
     self.extractTopicObjects(mainPage);
     self.extractVideoObjects(mainPage);
     
+  def searchVideo(self, searchText):
+    link = self.searchLink + searchText
+    self.buildPageMenu(link);
     
   def extractVideoObjects(self,mainPage):
     videoIDs = [];
@@ -137,9 +142,7 @@ class ARTEMediathek(Mediathek):
       self.gui.log(xmlPage);
   
   def extractTopicObjects(self,mainPage):
-    for touple in self.regex_ExtractTopicPages.findall(mainPage):
-      print (touple[1]);
-      
+    for touple in self.regex_ExtractTopicPages.findall(mainPage):      
       try:
         title = touple[1].encode('UTF-8');
       except:
