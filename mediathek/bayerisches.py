@@ -28,7 +28,8 @@ class BayerischesFSMediathek(Mediathek):
   @classmethod
   def name(self):
     return "BayernFS";
-  
+  def isSearchable(self):
+    return False;
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     
