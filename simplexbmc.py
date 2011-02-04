@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-import xbmc, xbmcgui, xbmcplugin,xbmcaddon, sys, urllib, os, time
+import xbmc, xbmcgui, xbmcplugin,xbmcaddon, sys, urllib, os, time, re 
 from html import transformHtmlCodes
 from xml.dom import minidom
+
+regex_findLink = re.compile("mms://.*wmv");
 
 __plugin__ = "Mediathek"
 
@@ -145,23 +147,16 @@ class SimpleXbmcGui(object):
       
   def playPlaylist(self, remotePlaylist):
     playerItem = xbmcgui.ListItem("RemotePlayList")
-    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)    
     
-    xmlFile = minidom.parse(remotePlaylist);
-    
-    
-    for entry in xmlFile.getElementsByTagName("entry"):
-      title = self.readText(entry, "title");
-      linkItem = entry.getElementsByTagName("ref")[0];
-      link = linkItem.getAttribute("href");
-      self.log(title);
-      self.log(link);
-      listItem=xbmcgui.ListItem(title);
+    for link in regex_findLink.findall(remotePlaylist):
+      print link;
+      listItem=xbmcgui.ListItem("NoOne");
       listItem.setProperty("PlayPath", link);
       
-      playlist.add(url=link, listitem=listItem)
-      
-    xbmc.Player().play(playlist,playerItem);
+      playlist.add(url=link, listitem=listItem);
+    xbmc.Player().play(playlist);
+    xbmc.executebuiltin("PreviousMenu");
       
   def errorOK(self,title="", msg=""):
     e = str( sys.exc_info()[ 1 ] )

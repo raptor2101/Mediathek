@@ -84,7 +84,7 @@ else:
     link = urllib.unquote_plus(params.get("link", ""))
     gui.log(link)
     remotePlaylist = mediathek.loadPage(link);
-    gui.playPlaylist(link);
+    gui.playPlaylist(remotePlaylist);
   elif(action == "openMenu"):
     path = params.get("path", "0");
     mediathek.buildMenu(path)

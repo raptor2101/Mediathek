@@ -174,7 +174,10 @@ class ORFMediathek(Mediathek):
     for searchObject in self.regex_extractSearchObject.findall(mainPage):
       videoLink = self.regex_extractProgrammLink.search(searchObject).group().replace("\"","");
       title = self.regex_extractProgrammTitle.search(searchObject).group().replace("title=\"","").replace("\"","");
+      title = title.decode("UTF-8");
       pictureLink = self.regex_extractProgrammPicture.search(searchObject).group();
+      
+      print videoLink;
       
       self.createVideoLink(title,pictureLink,videoLink);
     
