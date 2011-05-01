@@ -86,7 +86,7 @@ else:
     gui.playPlaylist(remotePlaylist);
   elif(action == "openMenu"):
     path = params.get("path", "0");
-    mediathek.buildMenu(path)
+    mediathek.buildMenu(path, 0)
   elif(action == "search"):
     result = gui.keyboardInput();
     if (result.isConfirmed()):
