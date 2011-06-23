@@ -119,7 +119,7 @@ class WDRMediathek(Mediathek):
     
     
     self._regex_extractAudioLink = re.compile(self.rootLink+"/mediathek/.*?\\.mp3");
-    self._regex_extractVideoLink = re.compile("dslSrc=rtmp://.*?\\.(mp4|flv)");
+    self._regex_extractVideoLink = re.compile("(dsl|isdn)Src=rtmp://.*?\\.(mp4|flv)");
     
     self.replace_html = re.compile("<.*?>");
     self.replace_tag = re.compile("(<meta name=\".*?\" content=\"|<link rel=\"image_src\" href=\"|\" />)");
@@ -177,7 +177,6 @@ class WDRMediathek(Mediathek):
       
   def generateDisplayObject(self,videoPageLink):
     mainPage = self.loadPage(videoPageLink);
-    print mainPage
     title = unicode(self._regex_extractTitle.search(mainPage).group(),'ISO-8859-1');
     description = unicode(self._regex_extractDescription.search(mainPage).group(),'ISO-8859-1');
     picture = unicode(self._regex_extractPicture.search(mainPage).group(),'ISO-8859-1');
@@ -188,13 +187,20 @@ class WDRMediathek(Mediathek):
     picture = self.replace_tag.sub("",picture);
     date = self.parseDate(self.replace_tag.sub("",date));
     
-    link = self._regex_extractVideoLink.search(mainPage);
-    if( link != None):
-      link = link.group();
-      link = link.replace("dslSrc=","");
-    else:
-      link = self._regex_extractAudioLink.search(mainPage).group();
+    links = {};
+    for linkString in self._regex_extractVideoLink.finditer(mainPage):
+      linkString = linkString.group();
+      if linkString.startswith("dslSrc="):
+        linkString = linkString.replace("dslSrc=","");
+        links[1] = SimpleLink(linkString, 0);
+      else:
+        linkString = linkString.replace("isdnSrc=","");
+        links[0] = SimpleLink(linkString, 0);
+    
+    if len(links) == 0:
+      linkString = self._regex_extractAudioLink.search(mainPage).group();
+      links[0] = SimpleLink(linkString, 0);
      
-    return DisplayObject(title,"",picture,description,{0:SimpleLink(link, 0)},True, date)
+    return DisplayObject(title,"",picture,description,links,True, date)
    
    
