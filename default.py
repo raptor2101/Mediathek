@@ -19,7 +19,6 @@
 import urllib,xbmc,os
 from simplexbmc import SimpleXbmcGui
 from mediathek.factory import MediathekFactory
-from simplexml import XmlReader;
 __plugin__ = "mediathek"
 
 gui = SimpleXbmcGui();
