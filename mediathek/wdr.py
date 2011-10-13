@@ -139,7 +139,7 @@ class WDRMediathek(Mediathek):
     
     
   def buildPageMenu(self, link, initCount, subLink = False):
-    self.gui.log(link);
+    self.gui.log("MenuLink: %s"%link);
     mainPage = self.loadPage(link);
     
     if(mainPage.startswith("<?xml version=\"1.0\"")):
@@ -192,9 +192,12 @@ class WDRMediathek(Mediathek):
       linkString = linkString.group();
       if linkString.startswith("dslSrc="):
         linkString = linkString.replace("dslSrc=","");
-        links[1] = SimpleLink(linkString, 0);
       else:
         linkString = linkString.replace("isdnSrc=","");
+      if(linkString.index("mediartmp://")>-1):
+        linkString = linkString.split("mediartmp://")
+        links[0] = SimpleLink("rtmp://%s"%linkString[1], 0);
+      else:
         links[0] = SimpleLink(linkString, 0);
     
     if len(links) == 0:
