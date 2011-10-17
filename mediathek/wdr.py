@@ -194,16 +194,20 @@ class WDRMediathek(Mediathek):
         linkString = linkString.replace("dslSrc=","");
       else:
         linkString = linkString.replace("isdnSrc=","");
-      if(linkString.index("mediartmp://")>-1):
-        linkString = linkString.split("mediartmp://")
-        links[0] = SimpleLink("rtmp://%s"%linkString[1], 0);
-      else:
-        links[0] = SimpleLink(linkString, 0);
+      links[0] = self.extractLink(linkString);
     
     if len(links) == 0:
       linkString = self._regex_extractAudioLink.search(mainPage).group();
-      links[0] = SimpleLink(linkString, 0);
+      links[0] = self.extractLink(linkString);
      
     return DisplayObject(title,"",picture,description,links,True, date)
    
-   
+  def extractLink(self, linkString):
+    if(linkString.find("mediartmp://")>-1):
+      linkString = linkString.split("mediartmp://")
+      return SimpleLink("rtmp://%s"%linkString[1], 0);
+    elif(linkString.find("mediahttp://")>-1):
+      linkString = linkString.split("mediahttp://")
+      return SimpleLink("http://%s"%linkString[1], 0);
+    else:
+      return SimpleLink(linkString, 0);
