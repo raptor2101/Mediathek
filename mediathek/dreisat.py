@@ -74,7 +74,7 @@ class DreiSatMediathek(Mediathek):
       TreeNode("15","neues","http://www.3sat.de/mediathek/rss/mediathek_neues.xml",True),
       TreeNode("16",u"Peter Voß fragt","http://www.3sat.de/mediathek/rss/mediathek_begegnungen.xml",True),
       TreeNode("17","Recht brisant","http://www.3sat.de/mediathek/rss/mediathek_Recht%20brisant.xml",True),
-      TreeNode("18","scobel","http://www.3sat.de/mediathek/rss/mediathek_kulturzeit.xml",True),
+      TreeNode("18","scobel","http://www.3sat.de/mediathek/rss/mediathek_scobel.xml",True),
       TreeNode("19","SCHWEIZWEIT","http://www.3sat.de/mediathek/rss/mediathek_schweizweit.xml",True),
       TreeNode("20","Theater","http://www.3sat.de/mediathek/rss/mediathek_theater.xml",True),
       TreeNode("21","vivo","http://www.3sat.de/mediathek/rss/mediathek_vivo.xml",True),
