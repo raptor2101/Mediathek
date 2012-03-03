@@ -181,5 +181,6 @@ class DreiSatMediathek(Mediathek):
         links[1] = SimpleLink(url, size);
       else:
         links[2] = SimpleLink(url, size);
-    self.gui.buildVideoLink(DisplayObject(title,"",picture,description,links,True, pubDate),self,nodeCount);
+    if links:
+      self.gui.buildVideoLink(DisplayObject(title,"",picture,description,links,True, pubDate),self,nodeCount);
       
