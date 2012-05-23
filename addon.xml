@@ -23,6 +23,7 @@ Aktuell implementiert sind:
 Currently implemented:
   3Sat, ARD, ZDF, ARTE, Bayrisches Fernsehen, ORF, WDR, NDR, KiKa (without Kikaninchen)
 </description>
+    <language>de</language>
     <platform>all</platform>
   </extension>
 </addon>
