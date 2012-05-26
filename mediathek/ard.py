@@ -75,14 +75,14 @@ class ARDMediathek(Mediathek):
                         )),
                       )
       
-    videoDocument_link_Regex = "/(.*?)documentId=\\d*"
+    videoDocument_link_Regex = "/.*?documentId=(\\d*)"
     metaInfo_link_Regex = "/ard/servlet/ajax-cache/\\d*/view=ajax(/clipFilter=fernsehen){0,1}(/isFromList=true){0,1}/index.html"
-    ajaxDocumentLink = "/ard/servlet/ajax-cache/\\d*/view=(switch|ajax|list)(/clipFilter=fernsehen){0,1}(/content=fernsehen){0,1}(/documentId=\\d*){0,1}/index.html"
-
+    ajaxDocumentLink = "/ard/servlet/ajax-cache/(\\d*)/view=(switch|ajax|list)(/clipFilter=fernsehen){0,1}(/content=fernsehen){0,1}(/documentId=\\d*){0,1}/index.html"
+    self.findImage_regex = "<img.*?src=\".*?\".*?/>"; #?
     #Regex für das Parsen der hauptseiten
     self.regex_ajaxLinkTag = re.compile("<a href=\""+ajaxDocumentLink+"\" title=\"\"><span>Neueste Clips</span></a>")
     self.regex_ajaxLink = re.compile(ajaxDocumentLink);
-    self.regex_videoLinks = re.compile("<a href=\""+videoDocument_link_Regex+"\" class=\".*\" rel=\""+metaInfo_link_Regex+"\">");
+    self.regex_videoLinks = re.compile("<img.*?src=\"(.*?)\".*?/>\\s*?</div>\\s*?<h3 class=\"mt-title\">\\s*?<a href=\""+videoDocument_link_Regex+"\" class=\".*\" rel=\""+metaInfo_link_Regex+"\">");
     self.regex_videoSeriesLinks = re.compile("<a id=\".*\" class=\".*\" rel=\""+metaInfo_link_Regex+"\" href=\""+videoDocument_link_Regex+"\">");
     self.regex_subLinks = re.compile("<a class=\"mt-box_preload.*?\" href=\""+ajaxDocumentLink+"\">");
     self.regex_videoDocumentLink = re.compile(videoDocument_link_Regex);
@@ -94,7 +94,6 @@ class ARDMediathek(Mediathek):
     
     #regex für die MetaInfos
     self.regex_pictureLink = re.compile("ard/[^\"]*");
-    self.regex_title = re.compile("<h3.*?><a.*?>.*?</a></h3>")
     self.regex_title = re.compile("<h3 class=\"mt-title\">.*<a.*>[^<]*?</a>")
     self.regex_category = re.compile("<p class=\"mt-source\">.*</p>");
     self.regex_description = re.compile("<p.*?>.*?</p>",re.DOTALL);
@@ -134,10 +133,11 @@ class ARDMediathek(Mediathek):
     return list(self.regex_videoLinks.finditer(resultPage));  
   
   def buildSearchResultLink(self, element, isPlayable, elementCount):
+    imageLink = element.group(1);
     element = element.group()
     videoDocumentLink = self.regex_videoDocumentLink.search(element).group();
     metaInfoLink = self.regex_MetaInfo.search(element).group();
-    displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink);
+    displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink, imageLink);
     
     if(isPlayable):
       displayObject.link = self.getVideoLink(self.rootLink+videoDocumentLink);
@@ -149,7 +149,7 @@ class ARDMediathek(Mediathek):
     
     
   def buildPageMenu(self, link, initCount, subLink = False):
-    self.gui.log(link);    
+    self.gui.log("Build Page Menu: "+link);    
     mainPage = self.loadPage(link);
     
     try:
@@ -162,6 +162,7 @@ class ARDMediathek(Mediathek):
         link = self.regex_ajaxLink.search(htmlTag).group();
       
       ajaxPage = self.loadPage(self.rootLink + link);
+      
       return self.extractVideoObjects(ajaxPage);
     except:
       self.gui.log("Categorien");
@@ -183,12 +184,13 @@ class ARDMediathek(Mediathek):
     elements = list(self.regex_videoLinks.finditer(mainPage));
     counter = len(elements);
     for element in elements:
-      element = element.group()
+      imageLink = element.group(1);
+      element = element.group(0)
       
       videoDocumentLink = self.regex_videoDocumentLink.search(element).group();
       metaInfoLink = self.regex_MetaInfo.search(element).group();
       
-      displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink);
+      displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink, imageLink);
       if displayObject is not None:
         displayObject.link = self.rootLink+videoDocumentLink;
         displayObject.isPlayable = False;
@@ -199,27 +201,28 @@ class ARDMediathek(Mediathek):
     elements = list(self.regex_videoLinks.finditer(mainPage));
     counter = len(elements);
     for element in elements:
-      element = element.group()
+      
+      imageLink = element.group(1);
+      element = element.group(0)
       
       videoDocumentLink = self.regex_videoDocumentLink.search(element).group();
       metaInfoLink = self.regex_MetaInfo.search(element).group();
       
-      displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink);
+      displayObject = self.extractMetaInfo(self.rootLink+metaInfoLink, imageLink);
       displayObject.link = self.getVideoLink(self.rootLink+videoDocumentLink);
       
       self.gui.buildVideoLink(displayObject,self, counter);
     return counter;
       
-  def extractMetaInfo(self, link):
-    self.gui.log(link);
+  def extractMetaInfo(self, link, imageLink):
+    self.gui.log("MetaInfoLink %s"%link);
     metaInfoPage = self.loadPage(link);
     
     if not metaInfoPage.find("Livestream") == -1:
       print "Livestream"
       return None
     
-    #pictureLink = self.regex_pictureLink.search(metaInfoPage).group();
-    pictureLink = ""
+    pictureLink = self.rootLink + imageLink;
     title = self.regex_title.search(metaInfoPage).group()
     title = self.replace_html.sub("",title);
     title = unicode(title,"UTF-8");
