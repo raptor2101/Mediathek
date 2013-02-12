@@ -5,7 +5,7 @@
   name="Mediathek"
   provider-name="Raptor 2101 [raptor2101@gmx.de]">
   <requires>
-   <import addon="xbmc.python" version="2.1"/>
+   <import addon="xbmc.python" version="2.1.0"/>
   </requires>
   <extension 
     point="xbmc.python.pluginsource"
