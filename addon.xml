@@ -26,4 +26,9 @@ Currently implemented:
     <language>de</language>
     <platform>all</platform>
   </extension>
+  <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+  <forum>https://github.com/raptor2101/Mediathek/issues</forum>
+  <website>https://github.com/raptor2101/Mediathek</website>
+  <source>https://github.com/raptor2101/Mediathek</source>
+  <email>raptor2101@gmx.de</email>
 </addon>
