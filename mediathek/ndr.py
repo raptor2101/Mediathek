@@ -79,10 +79,8 @@ class NDRMediathek(Mediathek):
       TreeNode("0","Sendungen von A-Z","",False,tmp_menu),
       TreeNode("2","Live","livestream",True),
       ];
-      
-  def buildPageMenu(self, link, initCount):
-    
-    if link == "livestream":
+
+  def buildPageMenuLivestream(self):
         nodeCount = 0;
         
         #Hamburg
@@ -112,36 +110,43 @@ class NDRMediathek(Mediathek):
         links[0] = SimpleLink("rtmpt://cp160543.live.edgefcs.net/live/ndr_fs_sh_hi_flv@19425", 0);
         links[1] = SimpleLink("rtmpt://cp160543.live.edgefcs.net/live/ndr_fs_sh_hq_flv@19426", 0);
         self.gui.buildVideoLink(DisplayObject("Schleswig-Holstein","","","",links,True),self,nodeCount);
-        
+
+  def buildPageMenuVideoList(self, link, initCount):
+    self.gui.log("buildPageMenu: "+link);
+
+    htmlPage = self.loadPage(link);
+
+    regex_extractVideoItems = re.compile("<div class=\"m_teaser\">(.*?)</p>\n</div>\n</div>",re.DOTALL);
+    regex_extractVideoItemHref = re.compile("<a href=\".*?/([^/]*?)\.html\" title=\".*?\" .*?>");
+    regex_extractVideoItemDate = re.compile("<div class=\"subline\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
+
+    videoItems = regex_extractVideoItems.findall(htmlPage)
+    nodeCount = initCount + len(videoItems)
+
+    for videoItem in videoItems:
+        videoID = regex_extractVideoItemHref.search(videoItem).group(1)
+        try:
+            dateString = regex_extractVideoItemDate.search(videoItem).group(1)
+            dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
+        except:
+            dateTime = None;
+        self.extractVideoInformation(videoID,dateTime,nodeCount)
+
+    #Pagination (weiter)
+    regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
+    nextPageHref = regex_extractNextPage.search(htmlPage)
+    if nextPageHref:
+        menuItemName = nextPageHref.group(2)
+        link = self.rootLink+nextPageHref.group(1)
+        self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount+1);
+
+  def buildPageMenu(self, link, initCount):
+    
+    if link == "livestream":
+        self.buildPageMenuLivestream()
     else:
-        self.gui.log("buildPageMenu: "+link);
-    
-        htmlPage = self.loadPage(link);
-    
-        regex_extractVideoItems = re.compile("<div class=\"m_teaser\">(.*?)</p>\n</div>\n</div>",re.DOTALL);
-        regex_extractVideoItemHref = re.compile("<a href=\".*?/([^/]*?)\.html\" title=\".*?\" .*?>");
-        regex_extractVideoItemDate = re.compile("<div class=\"subline\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
-    
-        videoItems = regex_extractVideoItems.findall(htmlPage)
-        nodeCount = initCount + len(videoItems)
-    
-        for videoItem in videoItems:
-            videoID = regex_extractVideoItemHref.search(videoItem).group(1)
-            try:
-                dateString = regex_extractVideoItemDate.search(videoItem).group(1)
-                dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
-            except:
-                dateTime = None;
-            self.extractVideoInformation(videoID,dateTime,nodeCount)
-    
-        #Pagination (weiter)
-        regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
-        nextPageHref = regex_extractNextPage.search(htmlPage)
-        if nextPageHref:
-            menuItemName = nextPageHref.group(2)
-            link = self.rootLink+nextPageHref.group(1)
-            self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount+1);
-    
+        self.buildPageMenuVideoList(link, initCount)
+
   def searchVideo(self, searchText):
     searchText = searchText.encode("UTF-8")
     searchText = urllib.urlencode({"query" : searchText})
