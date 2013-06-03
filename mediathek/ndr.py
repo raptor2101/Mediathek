@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-import re,time
+import re, datetime, time
 import pprint
 from mediathek import *
 from xml.dom import minidom;
@@ -61,51 +61,86 @@ class NDRMediathek(Mediathek):
     
     
     #Hauptmenue
-    self.menuTree = [
-      TreeNode("0","Die neuesten Videos",self.menuLink+"teasershow_pageSize-"+self.pageSize+".xml",True),
-      ];
-    
+    tmp_menu = []
     broadcastsLink = self.menuLink+"broadcasts.xml"
     broadcastsLinkPage = self.loadConfigXml(broadcastsLink);
     
     menuNodes = broadcastsLinkPage.getElementsByTagName("broadcast");
     displayObjects = [];
-    x = 1
+    x = 0
     for menuNode in menuNodes:
         menuId = menuNode.getAttribute('id')
         menuItem = unicode(menuNode.firstChild.data)
         menuLink = self.rootLink+"/mediatheksuche105_broadcast-"+menuId+"_format-video_page-1.html"
-        self.menuTree.append(TreeNode(str(x),menuItem,menuLink,True));
+        tmp_menu.append(TreeNode("0."+str(x),menuItem,menuLink,True));
         x = x+1
     
+    self.menuTree = [
+      TreeNode("0","Sendungen von A-Z","",False,tmp_menu),
+      TreeNode("2","Live","livestream",True),
+      ];
+      
   def buildPageMenu(self, link, initCount):
-    self.gui.log("buildPageMenu: "+link);
     
-    htmlPage = self.loadPage(link);
+    if link == "livestream":
+        nodeCount = 0;
+        
+        #Hamburg
+        nodeCount = nodeCount+1
+        links = {};
+        links[0] = SimpleLink("rtmpt://cp160545.live.edgefcs.net/live/ndr_fs_hh_hi_flv@19433", 0);
+        links[1] = SimpleLink("rtmpt://cp160545.live.edgefcs.net/live/ndr_fs_hh_hq_flv@19434", 0);
+        self.gui.buildVideoLink(DisplayObject("Hamburg","","","",links,True),self,nodeCount);
+        
+        #Mecklenburg-Vorpommern
+        nodeCount = nodeCount+1
+        links = {};
+        links[0] = SimpleLink("rtmpt://cp160544.live.edgefcs.net/live/ndr_fs_mv_hi_flv@19430", 0);
+        links[1] = SimpleLink("rtmpt://cp160544.live.edgefcs.net/live/ndr_fs_mv_hq_flv@19431", 0);
+        self.gui.buildVideoLink(DisplayObject("Mecklenburg-Vorpommern","","","",links,True),self,nodeCount);
+        
+        #Niedersachsen
+        nodeCount = nodeCount+1
+        links = {};
+        links[0] = SimpleLink("rtmpt://cp160542.live.edgefcs.net/live/ndr_fs_nds_hi_flv@19435", 0);
+        links[1] = SimpleLink("rtmpt://cp160542.live.edgefcs.net/live/ndr_fs_nds_hq_flv@19436", 0);
+        self.gui.buildVideoLink(DisplayObject("Niedersachsen","","","",links,True),self,nodeCount);
+        
+        #Schleswig-Holstein
+        nodeCount = nodeCount+1
+        links = {};
+        links[0] = SimpleLink("rtmpt://cp160543.live.edgefcs.net/live/ndr_fs_sh_hi_flv@19425", 0);
+        links[1] = SimpleLink("rtmpt://cp160543.live.edgefcs.net/live/ndr_fs_sh_hq_flv@19426", 0);
+        self.gui.buildVideoLink(DisplayObject("Schleswig-Holstein","","","",links,True),self,nodeCount);
+        
+    else:
+        self.gui.log("buildPageMenu: "+link);
     
-    regex_extractVideoItems = re.compile("<div class=\"m_teaser\">(.*?)</p>\n</div>\n</div>",re.DOTALL);
-    regex_extractVideoItemHref = re.compile("<a href=\".*?/([^/]*?)\.html\" title=\".*?\" .*?>");
-    regex_extractVideoItemDate = re.compile("<div class=\"subline\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
+        htmlPage = self.loadPage(link);
     
-    videoItems = regex_extractVideoItems.findall(htmlPage)
-    nodeCount = initCount + len(videoItems)
+        regex_extractVideoItems = re.compile("<div class=\"m_teaser\">(.*?)</p>\n</div>\n</div>",re.DOTALL);
+        regex_extractVideoItemHref = re.compile("<a href=\".*?/([^/]*?)\.html\" title=\".*?\" .*?>");
+        regex_extractVideoItemDate = re.compile("<div class=\"subline\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
     
-    for videoItem in videoItems:
-      videoID = regex_extractVideoItemHref.search(videoItem).group(1)
-      try:
-        dateString = regex_extractVideoItemDate.search(videoItem).group(1)
-        dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
-      except:
-        dateTime = None;
-      self.extractVideoInformation(videoID,dateTime,nodeCount)
+        videoItems = regex_extractVideoItems.findall(htmlPage)
+        nodeCount = initCount + len(videoItems)
     
-    #Pagination (weiter)
-    regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
-    nextPageHref = regex_extractNextPage.search(htmlPage)
-    if nextPageHref:
-        menuItemName = nextPageHref.group(2)
-        link = self.rootLink+nextPageHref.group(1)
-        self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount+1);
+        for videoItem in videoItems:
+            videoID = regex_extractVideoItemHref.search(videoItem).group(1)
+            try:
+                dateString = regex_extractVideoItemDate.search(videoItem).group(1)
+                dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
+            except:
+                dateTime = None;
+            self.extractVideoInformation(videoID,dateTime,nodeCount)
+    
+        #Pagination (weiter)
+        regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
+        nextPageHref = regex_extractNextPage.search(htmlPage)
+        if nextPageHref:
+            menuItemName = nextPageHref.group(2)
+            link = self.rootLink+nextPageHref.group(1)
+            self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount+1);
     
   def searchVideo(self, searchText):
     searchText = searchText.encode("UTF-8")
