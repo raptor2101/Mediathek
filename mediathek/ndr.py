@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 import re, datetime, time, calendar
-import pprint
 from mediathek import *
 from xml.dom import minidom;
 
@@ -63,15 +62,14 @@ class NDRMediathek(Mediathek):
     
     #Hauptmenue
     tmp_menu = []
-    broadcastsLink = self.menuLink+"broadcasts.xml"
-    broadcastsLinkPage = self.loadConfigXml(broadcastsLink);
+    extractBroadcasts = re.compile("<a href=\"/mediathek/mediatheksuche103_broadcast-(.*?).html\">(.*?)</a>");
+    htmlPage = self.loadPage("http://www.ndr.de/mediathek/dropdown101-extapponly.html")
     
-    menuNodes = broadcastsLinkPage.getElementsByTagName("broadcast");
     displayObjects = [];
     x = 0
-    for menuNode in menuNodes:
-        menuId = menuNode.getAttribute('id')
-        menuItem = unicode(menuNode.firstChild.data)
+    for menuNode in extractBroadcasts.finditer(htmlPage):
+        menuId = menuNode.group(1)
+        menuItem = menuNode.group(2)
         menuLink = self.rootLink+"/mediatheksuche105_broadcast-"+menuId+"_format-video_page-1.html"
         tmp_menu.append(TreeNode("0."+str(x),menuItem,menuLink,True));
         x = x+1
