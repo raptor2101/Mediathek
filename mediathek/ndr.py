@@ -62,8 +62,8 @@ class NDRMediathek(Mediathek):
     
     #Hauptmenue
     tmp_menu = []
-    extractBroadcasts = re.compile("<a href=\"/mediathek/mediatheksuche103_broadcast-(.*?).html\">(.*?)</a>");
-    htmlPage = self.loadPage("http://www.ndr.de/mediathek/dropdown101-extapponly.html")
+    extractBroadcasts = re.compile("<a href=\"/mediathek/mediatheksuche105_broadcast-(.*?).html\" class=\"link_arrow\">(.*?)</a>");
+    htmlPage = self.loadPage("http://www.ndr.de/mediathek/sendungen_a-z/index.html")
     
     displayObjects = [];
     x = 0
@@ -190,21 +190,21 @@ class NDRMediathek(Mediathek):
 
     htmlPage = self.loadPage(link);
 
-    regex_extractVideoItems = re.compile("<div class=\"m_teaser\">(.*?)(</p>\n</div>\n</div>|\n</div>\n</div>\n</li>)",re.DOTALL);
-    regex_extractVideoItemHref = re.compile("<a href=\".*?/([^/]*?)\.html\" title=\".*?\" .*?>");
-    regex_extractVideoItemDate = re.compile("<div class=\"subline\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
+    regex_extractVideoItems = re.compile("<div class=\"teaserpadding\">(.*?)(</p>\n</div>\n</div>|\n</div>\n</div>\n</li>)",re.DOTALL);
+    regex_extractVideoItemHref = re.compile("<a href=\"(.*?/[^/]*?\.html)\" title=\".*?\" .*?>");
+    regex_extractVideoItemDate = re.compile("<div class=\"subline\" style=\"cursor: pointer;\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
 
     videoItems = regex_extractVideoItems.findall(htmlPage)
     nodeCount = initCount + len(videoItems)
 
     for videoItem in videoItems:
-        videoID = regex_extractVideoItemHref.search(videoItem[0]).group(1)
+        videoLink = regex_extractVideoItemHref.search(videoItem[0]).group(1)
         try:
             dateString = regex_extractVideoItemDate.search(videoItem[0]).group(1)
             dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
         except:
             dateTime = None;
-        self.extractVideoInformation(videoID,dateTime,nodeCount)
+        self.extractVideoInformation(videoLink,dateTime,nodeCount)
 
     #Pagination (weiter)
     regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
@@ -273,25 +273,44 @@ class NDRMediathek(Mediathek):
     
     return links;
     
-  def extractVideoInformation(self, videoId, pubDate, nodeCount):
-    videoPage = self.rootLink+"/fernsehen/sendungen/media/"+videoId+"-avmeta.xml"
-    videoNode = self.loadConfigXml(videoPage)
-
-    if videoNode:
-        videoNode = videoNode.getElementsByTagName("video")[0]
-        title = self.readText(videoNode,"headline");
-        description = self.readText(videoNode,"teaser");
-        duration = self.readText(videoNode,"duration")[:2];
-        
-        imageNode = videoNode.getElementsByTagName("images")[0].getElementsByTagName("image")
-        if len(imageNode):
-            imageNode = imageNode[0]
-            imageNode = imageNode.getElementsByTagName("urls")[0]
-            picture = self.readText(imageNode, "url")
-        else:
-            picture = None
+  def extractVideoInformation(self, videoLink, pubDate, nodeCount):
     
-        links = self.loadVideoLinks(videoNode)
+    regexFindVideoLink = re.compile("http://.*(hi.mp4|lo.flv)");
+    regexFindImageLink = re.compile("/.*v-ardgalerie.jpg");
+    regexFindMediaData = re.compile("<div class=\"padding group\">\n<div class=\"textinfo\">\n<h2>(.*?)</h2>\n<div class=\"subline\">.*?</div>\n<p>(.*?)</p>",re.DOTALL);
+    videoLink = self.rootLink+videoLink
+    videoPage = self.loadPage(videoLink);
+    
+    videoLink = {}
+    videoLink[0] = SimpleLink(regexFindVideoLink.search(videoPage).group(0),0)
 
-        self.gui.buildVideoLink(DisplayObject(title,"",picture,description,links,True,pubDate,duration),self,nodeCount);
+    try:
+      pictureLink = self.rootLink+regexFindImageLink.search(videoPage).group(0)
+    except:
+      pictureLink = None
+    searchResult = regexFindMediaData.search(videoPage);
+    title = searchResult.group(1).decode('utf-8')
+    description = searchResult.group(2).decode('utf-8')
+    
+
+    self.gui.buildVideoLink(DisplayObject(title,"",pictureLink,description,videoLink,True,pubDate,0),self,nodeCount);
+    
+
+    ##if videoNode:
+    ##    videoNode = videoNode.getElementsByTagName("video")[0]
+    ##    title = self.readText(videoNode,"headline");
+    ##   description = self.readText(videoNode,"teaser");
+    #    duration = self.readText(videoNode,"duration")[:2];
+    #    
+    #    imageNode = videoNode.getElementsByTagName("images")[0].getElementsByTagName("image")
+    #    if len(imageNode):
+    #        imageNode = imageNode[0]
+    #        imageNode = imageNode.getElementsByTagName("urls")[0]
+    #        picture = self.readText(imageNode, "url")
+    #    else:
+    #        picture = None
+   # 
+   #     links = self.loadVideoLinks(videoNode)
+
+   #     self.gui.buildVideoLink(DisplayObject(title,"",picture,description,links,True,pubDate,duration),self,nodeCount);
    
