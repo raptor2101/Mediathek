@@ -53,6 +53,15 @@ class ARDMediathek(Mediathek):
                         TreeNode("1.25","Y",self.rootLink+"/tv/sendungen-a-z?buchstabe=Y",True),
                         TreeNode("1.26","Z",self.rootLink+"/tv/sendungen-a-z?buchstabe=Z",True),
                         )),
+		      TreeNode("2","Reportagen und Dokus",self.rootLink+"/tv/Reportage-Doku/mehr?documentId=21301806",True),
+		      TreeNode("3","Film-Highlights",self.rootLink+"/tv/Film-Highlights/mehr?documentId=21301808",True),
+		      TreeNode("4","Channels","",False,(
+			  TreeNode("4.0","Kinder",self.rootLink+"/tv/Kinder-Familie/mehr?documentId=21282542",True),
+			  TreeNode("4.1","Satire & Unterhaltung",self.rootLink+"/tv/Satire-Unterhaltung/mehr?documentId=21282544",True),
+			  TreeNode("4.2","Kultur",self.rootLink+"/tv/Kultur/mehr?documentId=21282546",True),
+			  TreeNode("4.3","Serien & Soaps",self.rootLink+"/tv/Serien-Soaps/mehr?documentId=21282548",True),
+			  TreeNode("4.4","Wissen",self.rootLink+"/tv/Wissen/mehr?documentId=21282530",True),
+			))
                       )
     self.configLink = self.rootLink+"/play/media/%s?devicetype=pc&feature=flash"
     
