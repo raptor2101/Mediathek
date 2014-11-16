@@ -176,7 +176,10 @@ class NDRMediathek(Mediathek):
             dateTime = time.strptime(dateString,"%d.%m.%Y %H:%M");
         except:
             dateTime = None;
-        self.extractVideoInformation(videoLink,dateTime,nodeCount)
+        # TODO: Some videos from Extra 3 are located on http://www.n-joy.de/
+        #       which cannot be parsed by this script, yet.
+        if not re.compile("http://www.n-joy.de/.*").search(videoLink):
+            self.extractVideoInformation(videoLink,dateTime,nodeCount)
 
 
     #Pagination (weiter)
@@ -236,7 +239,7 @@ class NDRMediathek(Mediathek):
 
   def extractVideoInformation(self, videoLink, pubDate, nodeCount):
     
-    regexFindVideoLink = re.compile("http://.*(hi.mp4|lo.flv)");
+    regexFindVideoLink = re.compile("http://.*(hq.mp4|hi.mp4|lo.flv)");
     regexFindImageLink = re.compile("/.*v-ardgalerie.jpg");
     regexFindMediaData = re.compile("<div class=\"padding group\">\n<div class=\"textinfo\">\n<h2>(.*?)</h2>\n<div class=\"subline\">.*?</div>\n<p>(.*?)</p>",re.DOTALL);
     videoLink = self.rootLink+videoLink
