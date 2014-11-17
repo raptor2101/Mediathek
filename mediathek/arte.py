@@ -42,12 +42,12 @@ class ARTEMediathek(Mediathek):
   def name(self):
     return "ARTE";
   def isSearchable(self):
-    return True;
+    return False;
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
-    self.rootLink = "http://videos.arte.tv";
+    self.rootLink = "http://www.arte.tv";
     self.menuTree = (
-      TreeNode("0","Neuste Videos",self.rootLink+"/de/do_delegate/videos/index-3188626,view,rss.xml",True),
+      TreeNode("0","Neuste Videos",self.rootLink+"/guide/de",True),
       
       TreeNode("1","Programme","",False, (
         TreeNode("1.0",u"360° - Geo",self.rootLink+"/de/do_delegate/videos/sendungen/360_geo/index-3188704,view,rss.xml",True),
@@ -83,120 +83,60 @@ class ARTEMediathek(Mediathek):
         TreeNode("2.10",u"Umwelt & Wissenschaft",self.rootLink+"/de/do_delegate/videos/alle_videos/umwelt_wissenschaft/index-3188650,view,rss.xml",True),
       )),
     );
+      
+    self.regex_VideoPageLinks = re.compile("href=[\"'](/guide/de/\d{6}-\d{3}/.+?)[\"']");
     
-    self.regex_ExtractVideoIdent = re.compile(".*/(.*\\d+)\.html");
+    self.regex_JSONPageLink = re.compile("http://arte.tv/papi/tvguide/videos/stream/player/D/\d{6}-\d{3}.+?/ALL/ALL.json");
+    self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?}");
+    self.regex_JSON_ImageLink = re.compile("\"original\":\"(http://www.arte.tv/papi/tvguide/images/.*?.jpg)\"");
+    self.regex_JSON_Detail = re.compile("\"VDE\":\"(.*?)\"");
+    self.regex_JSON_Titel = re.compile("\"VTI\":\"(.*?)\"");
     
     
-    self.regex_Clips = re.compile("/de/videos/[^/]*-(\\d*).html")
-    self.regex_ExtractVideoConfig = re.compile("http://videos\\.arte\\.tv/de/do_delegate/videos/.*-\\d*,view,asPlayerXml\\.xml");
-    self.regex_ExtractRtmpLink = re.compile("<url quality=\"(sd|hd)\">(rtmp://.*mp4:.*)</url>")
-    self.regex_ExtractTopicPages = re.compile("<a href=\"([^\"]*)\"[^<]*>([^<]*)</a> \((\\d+)\)");
-    self.regex_DescriptionLink = re.compile("http://videos\\.arte\\.tv/de/videos/.*?\\.html");
-    self.regex_Description = re.compile("<div class=\"recentTracksCont\">\\s*<div>\\s*<p>.*?</p>");
-    self.replace_html = re.compile("<.*?>");
     
-    self.baseXmlLink = self.rootLink+"/de/do_delegate/videos/%s,view,asPlayerXml.xml"
-    self.searchLink = self.rootLink+"/de/do_search/videos/suche?q=";
     
   def buildPageMenu(self, link, initCount):
     self.gui.log("buildPageMenu: "+link);
-    rssFeed = self.loadXml(link);
-    self.extractVideoObjects(rssFeed, initCount);
+    htmlPage = self.loadPage(link);
+    self.extractVideoLinks(htmlPage, initCount);
   
   
-  def loadXml(self, link):
-    self.gui.log("load:"+link)
-    xmlPage = self.loadPage(link);
-    return minidom.parseString(xmlPage);  
+  #def searchVideo(self, searchText):
+  #  link = self.searchLink + searchText
+  #  self.buildPageMenu(link,0);
     
-  def searchVideo(self, searchText):
-    link = self.searchLink + searchText
-    self.buildPageMenu(link,0);
+  def extractVideoLinks(self, htmlPage, initCount):
+    links = set();
+    for videoPageLink in self.regex_VideoPageLinks.finditer(htmlPage):
+      link = videoPageLink.group(1);
+      
+      if(link not in links):
+	links.add(link);
+    linkCount = initCount + len(links);
+    for link in links:
+      videoPage = self.loadPage(self.rootLink+link);
+      match = self.regex_JSONPageLink.search(videoPage);
+      if(match is not None):
+	link = match.group(0);
+	jsonPage = self.loadPage(link).decode('utf-8');
+	videoLinks = {}
+	for match in self.regex_JSON_VideoLink.finditer(jsonPage):
+	  bitrate = match.group(1);
+	  url = match.group(2);
+	  if(bitrate < 800):
+	    videoLinks[0] = SimpleLink(url,0);
+	  if(bitrate >= 800 and bitrate < 1500):
+	    videoLinks[1] = SimpleLink(url,0);
+	  if(bitrate >= 1500 and bitrate <= 2200):
+	    videoLinks[1] = SimpleLink(url,0);
+	  if(bitrate >= 2200):
+	    videoLinks[3] = SimpleLink(url,0);
+	picture = self.regex_JSON_ImageLink.search(jsonPage).group(1);
+	title = self.regex_JSON_Titel.search(jsonPage).group(1);
+	detail =  self.regex_JSON_Detail.search(jsonPage).group(1);
+	self.gui.buildVideoLink(DisplayObject(title,"",picture,detail,videoLinks,True, None),self,linkCount);
+	
+   
     
-  def extractVideoObjects(self, rssFeed, initCount):
-    nodes = rssFeed.getElementsByTagName("item");
-    nodeCount = initCount + len(nodes)
-    for itemNode in nodes:
-      link = title = self.readText(itemNode,"link");
-      ident = self.regex_ExtractVideoIdent.match(link).group(1);
-      link = self.baseXmlLink%ident;
-      xmlPage = self.loadXml(link); 
-      for videosNode in xmlPage.getElementsByTagName("videos"):
-        print videosNode.toxml();
-        print len(videosNode.childNodes);
-        for videoNode in videosNode.childNodes:
-          if(videoNode.nodeType == Node.ELEMENT_NODE):
-            langAttr = videoNode.getAttribute("lang");
-            if(langAttr == "de"):
-              link = videoNode.getAttribute("ref");
-              self.extractVideoInformation(link,nodeCount);
-  
-  def parseDate(self,dateString):
-    self.gui.log(dateString);
-    dateString = regex_dateString.search(dateString).group();
-    for month in month_replacements.keys():
-      dateString = dateString.replace(month,month_replacements[month]);
-    return time.strptime(dateString,"%d %m %Y");
     
-  def extractVideoInformation(self, link, elementCount):
-    try:
-      xmlPage = self.loadXml(link);
-      try:
-        
-        for titleNode in xmlPage.getElementsByTagName("name"):
-          if(titleNode.hasChildNodes()):
-            title = titleNode.firstChild.data;
-            break;
-        picture = xmlPage.getElementsByTagName("firstThumbnailUrl")[0].firstChild.data;
-        dateString = xmlPage.getElementsByTagName("dateVideo")[0].firstChild.data;
-        date = self.parseDate(dateString);
-        
-        links = {}
-        
-        for urlNode in xmlPage.getElementsByTagName("urls")[0].childNodes:
-          if(urlNode.nodeType == Node.ELEMENT_NODE):
-            quality = urlNode.getAttribute("quality");
-            if(quality == "sd"):
-              quality = 0;
-            else:
-              quality = 2;
-            
-            urlString = urlNode.firstChild.data;
-            self.gui.log(urlString);
-            stringArray = urlString.split("mp4:");
-            
-            links[quality] = SimpleLink("%s playpath=MP4:%s swfUrl=http://videos.arte.tv/blob/web/i18n/view/player_11-3188338-data-4836231.swf swfVfy=1"%(stringArray[0],stringArray[1]),0);
-        if(len(links) > 0):
-          self.gui.log("Picture: "+picture);
-          self.gui.buildVideoLink(DisplayObject(title,"",picture,"",links,True,date),self,elementCount);
-        xmlPage.unlink();
-      except:
-        self.gui.log("something goes wrong while processing "+link);
-        print xmlPage;
-        self.gui.log("Exception: ");
-        traceback.print_exc();
-        self.gui.log("Stacktrace: ");
-        traceback.print_stack();
-    except:
-      self.gui.log("something goes wrong while loading "+link);
-  
-  def extractTopicObjects(self,mainPage,initCount):
-    touples = self.regex_ExtractTopicPages.findall(mainPage)
-    elementCount = len(touples) + initCount
-    for touple in touples:      
-      try:
-        title = touple[1].encode('UTF-8');
-      except:
-        title = touple[1].decode('UTF-8');
-      numbers = touple[2];
-      link = touple[0];
-      self.gui.buildVideoLink(DisplayObject(title,"","","",self.rootLink+link,False),self,elementCount);
-    return elementCount;
-  
-  def readText(self,node,textNode):
-    try:
-      node = node.getElementsByTagName(textNode)[0].firstChild;
-      return unicode(node.data);
-    except:
-      return "";
       
