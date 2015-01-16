@@ -163,7 +163,7 @@ class NDRMediathek(Mediathek):
     htmlPage = self.loadPage(link);
 
     regex_extractVideoItems = re.compile("<div class=\"teaserpadding\">(.*?)(</p>\n</div>\n</div>|\n</div>\n</div>\n</li>)",re.DOTALL);
-    regex_extractVideoItemHref = re.compile("<a href=\"(.*?/[^/]*?\.html)\" title=\".*?\" .*?>");
+    regex_extractVideoItemHref = re.compile("<a href=\"(.*?/[^/]*?\.html)\" title=\".*?\" .*?>",re.DOTALL);
     regex_extractVideoItemDate = re.compile("<div class=\"subline\" style=\"cursor: pointer;\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>");
 
     videoItems = regex_extractVideoItems.findall(htmlPage)
