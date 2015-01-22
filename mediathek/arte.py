@@ -95,7 +95,7 @@ class ARTEMediathek(Mediathek):
     
     
     self.regex_JSONPageLink = re.compile("http://arte.tv/papi/tvguide/videos/stream/player/D/\d{6}-\d{3}.+?/ALL/ALL.json");
-    self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?}");
+    self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?\"versionShortLibelle\":\"([a-zA-Z]{2})\".*?}");
     self.regex_JSON_ImageLink = re.compile("\"original\":\"(http://www.arte.tv/papi/tvguide/images/.*?.jpg)\"");
     self.regex_JSON_Detail = re.compile("\"VDE\":\"(.*?)\"");
     self.regex_JSON_Titel = re.compile("\"VTI\":\"(.*?)\"");
@@ -138,12 +138,16 @@ class ARTEMediathek(Mediathek):
         for match in self.regex_JSON_VideoLink.finditer(jsonPage):
           bitrate = match.group(1);
           url = match.group(2);
+          lang = match.group(3);
+          if lang.lower() != 'de':
+            continue;
+
           if(bitrate < 800):
             videoLinks[0] = SimpleLink(url,0);
           if(bitrate >= 800 and bitrate < 1500):
             videoLinks[1] = SimpleLink(url,0);
-          if(bitrate >= 1500 and bitrate <= 2200):
-            videoLinks[1] = SimpleLink(url,0);
+          if(bitrate >= 1500 and bitrate < 2200):
+            videoLinks[2] = SimpleLink(url,0);
           if(bitrate >= 2200):
             videoLinks[3] = SimpleLink(url,0);
         if(len(videoLinks) == 0):
