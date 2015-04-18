@@ -115,6 +115,7 @@ class ARTEMediathek(Mediathek):
     
   def extractVideoLinks(self, htmlPage, initCount):
     links = set();
+    jsonLinks = set();
     for videoPageLink in self.regex_VideoPageLinksHTML.finditer(htmlPage):
       link = videoPageLink.group(1);
       
@@ -125,38 +126,45 @@ class ARTEMediathek(Mediathek):
       link = videoPageLink.group(1).replace("\\/","/");
       if(link not in links):
         links.add(link);
-    self.gui.log("Found %s unique links"%len(links));
+    
+    for link in self.regex_JSONPageLink.finditer(htmlPage):
+      jsonLinks.add(link.group(0));
+    
     linkCount = initCount + len(links);
     for link in links:
       videoPage = self.loadPage(self.rootLink+link);
       match = self.regex_JSONPageLink.search(videoPage);
       if(match is not None):
-        link = match.group(0);
-        
-        jsonPage = self.loadPage(link).decode('utf-8');
-        videoLinks = {}
-        for match in self.regex_JSON_VideoLink.finditer(jsonPage):
-          bitrate = match.group(1);
-          url = match.group(2);
-          lang = match.group(3);
-          if lang.lower() != 'de':
-            continue;
-
-          if(bitrate < 800):
-            videoLinks[0] = SimpleLink(url,0);
-          if(bitrate >= 800 and bitrate < 1500):
-            videoLinks[1] = SimpleLink(url,0);
-          if(bitrate >= 1500 and bitrate < 2200):
-            videoLinks[2] = SimpleLink(url,0);
-          if(bitrate >= 2200):
-            videoLinks[3] = SimpleLink(url,0);
-        if(len(videoLinks) == 0):
+        jsonLinks.add(match.group(0));
+    
+    
+    self.gui.log("Found %s unique links"%len(jsonLinks));
+    for link in jsonLinks:
+      self.gui.log("Link: %s"%link); 
+      jsonPage = self.loadPage(link).decode('utf-8');
+      videoLinks = {}
+      for match in self.regex_JSON_VideoLink.finditer(jsonPage):
+        bitrate = match.group(1);
+        url = match.group(2);
+        lang = match.group(3);
+        if lang.lower() != 'de':
           continue;
-        picture = self.regex_JSON_ImageLink.search(jsonPage).group(1);
-        title = self.regex_JSON_Titel.search(jsonPage).group(1);
-        detail =  self.regex_JSON_Detail.search(jsonPage).group(1);
-        
-        self.gui.buildVideoLink(DisplayObject(title,"",picture,detail,videoLinks,True, None),self,linkCount);
+
+        if(bitrate < 800):
+          videoLinks[0] = SimpleLink(url,0);
+        if(bitrate >= 800 and bitrate < 1500):
+          videoLinks[1] = SimpleLink(url,0);
+        if(bitrate >= 1500 and bitrate < 2200):
+          videoLinks[2] = SimpleLink(url,0);
+        if(bitrate >= 2200):
+          videoLinks[3] = SimpleLink(url,0);
+      if(len(videoLinks) == 0):
+        continue;
+      picture = self.regex_JSON_ImageLink.search(jsonPage).group(1);
+      title = self.regex_JSON_Titel.search(jsonPage).group(1);
+      detail =  self.regex_JSON_Detail.search(jsonPage).group(1);
+      
+      self.gui.buildVideoLink(DisplayObject(title,"",picture,detail,videoLinks,True, None),self,linkCount);
 	
    
     
