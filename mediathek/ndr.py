@@ -183,12 +183,11 @@ class NDRMediathek(Mediathek):
 
 
     #Pagination (weiter)
-    regex_extractNextPage = re.compile("<a href=\"(.*?)\" class=\"button_next\"  title=\"(.*?)\".*?>")
-    nextPageHref = regex_extractNextPage.search(htmlPage)
-    if nextPageHref:
-        menuItemName = nextPageHref.group(2)
-        link = self.rootLink+nextPageHref.group(1)
-        self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount+1);
+    regex_extractNextPage = re.compile("<a title=\"(.*?)\" href=\"(.*?)\" class=\"button iconbutton square\".*?>")
+    for nextPageHref in regex_extractNextPage.finditer(htmlPage):
+        menuItemName = nextPageHref.group(1).decode("UTF-8");
+        link = self.rootLink+nextPageHref.group(2);
+        self.gui.buildVideoLink(DisplayObject(menuItemName,"","","description",link,False),self,nodeCount);
 
   def buildPageMenu(self, link, initCount):
     
