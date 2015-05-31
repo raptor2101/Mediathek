@@ -241,7 +241,7 @@ class NDRMediathek(Mediathek):
     
     regexFindVideoLink = re.compile("http://.*(hq.mp4|hi.mp4|lo.flv)");
     regexFindImageLink = re.compile("/.*v-ardgalerie.jpg");
-    regexFindMediaData = re.compile("<div class=\"padding group\">\n<div class=\"textinfo\">\n<h2>(.*?)</h2>\n<div class=\"subline\">.*?</div>\n<p>(.*?)</p>",re.DOTALL);
+    regexFindMediaData = re.compile("<div class=\"padding group\">\\s*?<div class=\"textinfo\">\\s*?<h2.*?>(.*?)</h2>\\s*?<div class=\"subline\">.*?</div>\\s*?<p.*?>(.*?)</p>",re.DOTALL);
     videoLink = self.rootLink+videoLink
     videoPage = self.loadPage(videoLink);
     
