@@ -193,6 +193,8 @@ class NDRMediathek(Mediathek):
             if not re.compile("http://www.n-joy.de/.*").search(video_link):
                 print video_link
                 self.extractVideoInformation(video_link, None, nodeCount)
+            # TODO: parse REGIONALPROGRAMM
+            # TODO: parse Beiträge
 
 
     def buildPageMenuVideoList(self, link, initCount):
