@@ -251,8 +251,8 @@ class NDRMediathek(Mediathek):
             pictureLink = self.rootLink+regexFindImageLink.search(videoPage).group(0)
         except:
             pictureLink = None
-            searchResult = regexFindMediaData.search(videoPage)
-            title = searchResult.group(1).decode('utf-8')
-            description = searchResult.group(2).decode('utf-8')
+        searchResult = regexFindMediaData.search(videoPage)
+        title = searchResult.group(1).decode('utf-8')
+        description = searchResult.group(2).decode('utf-8')
 
         self.gui.buildVideoLink(DisplayObject(title, "", pictureLink, description, videoLink, True, pubDate, 0), self, nodeCount)
