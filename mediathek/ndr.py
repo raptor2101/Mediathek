@@ -167,6 +167,34 @@ class NDRMediathek(Mediathek):
     def buildPageMenuVideoListVerpasst(self, link, initCount):
         self.gui.log("buildPageMenuVerpasst: " + link)
 
+        htmlPage = self.loadPage(link)
+
+        re_video_item = re.compile(
+            '<a href="(.*?)" title=".*?"\\s*>(.*?)</a>'
+        )
+        re_video_item_sub = re.compile(
+            '<a title=".*?" href="(.*?)">\\s*?'
+            '<span class="icon icon_video" aria-label="Video starten"></span>\\s*?'
+            '<span class="runtime"></span>\\s*?'
+            '(.*?)</a>'
+        )
+
+        # video_items = re_video_item.findall(htmlPage)
+        # video_sub_items = re_video_item_sub.search(htmlPage)
+        video_items = re.split('<li\\s*?class="program hasVideo(?: regioprg)? ">', htmlPage)
+        nodeCount = initCount + len(video_items)
+        print len(video_items)
+        for v_item in video_items[1:]:
+            try:
+                video_link, title = re_video_item.search(v_item).groups()
+            except:
+                print v_item
+                break
+            if not re.compile("http://www.n-joy.de/.*").search(video_link):
+                print video_link
+                self.extractVideoInformation(video_link, None, nodeCount)
+
+
     def buildPageMenuVideoList(self, link, initCount):
         self.gui.log("buildPageMenu: " + link)
 
@@ -278,8 +306,18 @@ class NDRMediathek(Mediathek):
             pictureLink = self.rootLink+regexFindImageLink.search(videoPage).group(0)
         except:
             pictureLink = None
-        searchResult = regexFindMediaData.search(videoPage)
-        title = searchResult.group(1).decode('utf-8')
-        description = searchResult.group(2).decode('utf-8')
+        if '<article class="w66 ">' not in videoPage:
+            searchResult = regexFindMediaData.search(videoPage)
+            title = searchResult.group(1).decode('utf-8')
+            description = searchResult.group(2).decode('utf-8')
+        else:
+            title = re.search(
+                'var trackTitle = "(.*?)"',
+                videoPage
+            ).group(1).decode('utf-8')
+            description = re.search(
+                '<meta name="description" content="(.*?)"',
+                videoPage
+            ).group(1).decode('utf-8')
 
         self.gui.buildVideoLink(DisplayObject(title, "", pictureLink, description, videoLink, True, pubDate, 0), self, nodeCount)
