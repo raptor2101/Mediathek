@@ -36,7 +36,8 @@ class NDRMediathek(Mediathek):
 
         self.rootLink = "http://www.ndr.de"
 
-        self.searchLink = self.rootLink+"/mediathek/mediatheksuche101.html?pagenumber=1&search_video=true&"
+        # self.searchLink = self.rootLink+"/mediathek/mediatheksuche101.html?pagenumber=1&search_video=true&"
+        self.searchLink = self.rootLink+"/suche10.html?search_mediathek=1&"
 
         # Hauptmenue
         tmp_menu = []
@@ -59,10 +60,14 @@ class NDRMediathek(Mediathek):
 
     def buildPageMenuSendungVerpasst(self, action):
         # Bis 2008
-        htmlPage = self.loadPage("http://www.ndr.de/mediathek/dropdown105-extapponly.html")
+        # htmlPage = self.loadPage("http://www.ndr.de/mediathek/dropdown105-extapponly.html")
+        htmlPage = self.loadPage("http://www.ndr.de/mediathek/sendung_verpasst/epg1490_display-onlyvideo.html")
 
-        regex_verpasstNow = re.compile("<input type=\"hidden\" name=\"verpasstNow\" id =\"verpasstNow\" value=\"(\\d{2}\.\\d{2}\.\\d{4})\" />")
-        verpasstNow = regex_verpasstNow.search(htmlPage).group(1)
+        # regex_verpasstNow = re.compile("<input type=\"hidden\" name=\"verpasstNow\" id =\"verpasstNow\" value=\"(\\d{2}\.\\d{2}\.\\d{4})\" />")
+        regex_verpasstNow = re.compile(
+            '<h1 class="viewdate">\n.*?(\\d{2})\.(\\d{2})<span class="notbelow30em">\.(\\d{4})</span>'
+        )
+        verpasstNow = ".".join(regex_verpasstNow.search(htmlPage).groups())
         try:
             dateTimeTmp = datetime.datetime.strptime(verpasstNow, "%d.%m.%Y")
         except TypeError:
@@ -71,15 +76,16 @@ class NDRMediathek(Mediathek):
         nodeCount = 0
 
         if action == "":
-            verpasstHeute = dateTimeTmp.strftime("%Y%m%d")
+            verpasstHeute = dateTimeTmp.strftime("%Y-%m-%d")
             dateTimeTmp = dateTimeTmp-datetime.timedelta(1)
-            verpasstGestern = dateTimeTmp.strftime("%Y%m%d")
+            verpasstGestern = dateTimeTmp.strftime("%Y-%m-%d")
             dateTimeTmp = dateTimeTmp-datetime.timedelta(1)
-            verpasstVorGestern = dateTimeTmp.strftime("%Y%m%d")
+            verpasstVorGestern = dateTimeTmp.strftime("%Y-%m-%d")
 
-            self.gui.buildVideoLink(DisplayObject("Heute", "", "", "description", self.rootLink + "/mediathek/verpasst109-extapponly_date-" + verpasstHeute + "_branding-ndrtv.html", False), self, 1)
-            self.gui.buildVideoLink(DisplayObject("Gestern", "", "", "description", self.rootLink + "/mediathek/verpasst109-extapponly_date-" + verpasstGestern + "_branding-ndrtv.html", False), self, 2)
-            self.gui.buildVideoLink(DisplayObject("Vorgestern", "", "", "description", self.rootLink + "/mediathek/verpasst109-extapponly_date-" + verpasstVorGestern + "_branding-ndrtv.html", False), self, 3)
+            # self.gui.buildVideoLink(DisplayObject("Heute", "", "", "description", self.rootLink + "/mediathek/verpasst109-extapponly_date-" + verpasstHeute + "_branding-ndrtv.html", False), self, 1)
+            self.gui.buildVideoLink(DisplayObject("Heute", "", "", "description", self.rootLink + "/mediathek/sendung_verpasst/epg1490_date-" + verpasstHeute + "_display-onlyvideo.html", False), self, 1)
+            self.gui.buildVideoLink(DisplayObject("Gestern", "", "", "description", self.rootLink + "/mediathek/sendung_verpasst/epg1490_date-" + verpasstGestern + "_display-onlyvideo.html", False), self, 2)
+            self.gui.buildVideoLink(DisplayObject("Vorgestern", "", "", "description", self.rootLink + "/mediathek/sendung_verpasst/epg1490_date-" + verpasstVorGestern + "_display-onlyvideo.html", False), self, 3)
             self.gui.buildVideoLink(DisplayObject("Datum waehlen", "", "", "description", "sendungverpasstselect", False), self, 4)
         elif action == "select":
             dateTimeTmp = dateTimeTmp-datetime.timedelta(3)
@@ -158,19 +164,29 @@ class NDRMediathek(Mediathek):
             links[0] = SimpleLink("http://ndr_fs-lh.akamaihd.net/i/ndrfs_sh@119225/master.m3u8", 0)
             self.gui.buildVideoLink(DisplayObject("Schleswig-Holstein", "", "", "", links, True), self, nodeCount)
 
+    def buildPageMenuVideoListVerpasst(self, link, initCount):
+        self.gui.log("buildPageMenuVerpasst: " + link)
+
     def buildPageMenuVideoList(self, link, initCount):
         self.gui.log("buildPageMenu: " + link)
 
         htmlPage = self.loadPage(link)
 
-        regex_extractVideoItems = re.compile("<div class=\"teaserpadding\">(.*?)(</p>\n</div>\n</div>|\n</div>\n</div>\n</li>)", re.DOTALL)
-        regex_extractVideoItemHref = re.compile("<a href=\"(.*?/[^/]*?\.html)\" title=\".*?\" .*?>", re.DOTALL)
+        regex_extractVideoItems = re.compile(
+            "<div class=\"teaserpadding\">"
+            "(.*?)"
+            "(</p>\n</div>\n</div>|\n</div>\n</div>\n</li>)", re.DOTALL)
+        regex_extractVideoItemHref = re.compile("<a title=\".*?\" href=\"(.*?/[^/]*?\.html)\".*?>", re.DOTALL)
         regex_extractVideoItemDate = re.compile("<div class=\"subline\" style=\"cursor: pointer;\">.*?(\\d{2}\.\\d{2}\.\\d{4} \\d{2}:\\d{2})</div>")
 
         videoItems = regex_extractVideoItems.findall(htmlPage)
         nodeCount = initCount + len(videoItems)
 
         for videoItem in videoItems:
+            print "link: {0}".format(link)
+            print "videoItem: {0}".format(videoItem[0])
+            if "<div class=\"subline\">" not in videoItem[0]:
+                continue
             videoLink = regex_extractVideoItemHref.search(videoItem[0]).group(1)
             try:
                 dateString = regex_extractVideoItemDate.search(videoItem[0]).group(1)
@@ -191,10 +207,13 @@ class NDRMediathek(Mediathek):
 
     def buildPageMenu(self, link, initCount):
 
+        print link
         if link[0:15] == "sendungverpasst":
             self.buildPageMenuSendungVerpasst(link[15:])
         elif link == "livestream":
             self.buildPageMenuLivestream()
+        elif "/sendung_verpasst/" in link:
+            self.buildPageMenuVideoListVerpasst(link, initCount)
         else:
             self.buildPageMenuVideoList(link, initCount)
 
@@ -240,10 +259,18 @@ class NDRMediathek(Mediathek):
 
         regexFindVideoLink = re.compile("http://.*(hq.mp4|hi.mp4|lo.flv)")
         regexFindImageLink = re.compile("/.*v-ardgalerie.jpg")
-        regexFindMediaData = re.compile("<div class=\"padding group\">\\s*?<div class=\"textinfo\">\\s*?<h2.*?>(.*?)</h2>\\s*?<div class=\"subline\">.*?</div>\\s*?<p.*?>(.*?)</p>", re.DOTALL)
-        videoLink = self.rootLink+videoLink
+        regexFindMediaData = re.compile(
+            "<div class=\"padding group\">\\s*?<div class=\"textinfo\">\\s*?<h2.*?>"
+            "(.*?)"
+            "</h2>\\s*?.*?<div class=\"subline\">.*?</div>\\s*?<p.*?>"
+            "(.*?)"
+            "</p>", re.DOTALL
+        )
+        if not videoLink.startswith(self.rootLink):
+            videoLink = self.rootLink+videoLink
         videoPage = self.loadPage(videoLink)
 
+        print "videolink: {0}".format(videoLink)
         videoLink = {}
         videoLink[0] = SimpleLink(regexFindVideoLink.search(videoPage).group(0), 0)
 
