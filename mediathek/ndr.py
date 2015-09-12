@@ -55,7 +55,7 @@ class NDRMediathek(Mediathek):
         self.menuTree = [
             TreeNode("0", "Sendungen von A-Z", "", False, tmp_menu),
             TreeNode("1", "Sendung verpasst?", "sendungverpasst", True),
-            # TreeNode("2","Live","livestream",True),#Livestream ruckelt zu stark :-(
+            TreeNode("2","Live","livestream",True),#Livestream ruckelt zu stark :-(
         ]
 
     def buildPageMenuSendungVerpasst(self, action):
@@ -122,9 +122,9 @@ class NDRMediathek(Mediathek):
                 dateTimeTmp2 = datetime.datetime(*(time.strptime(action_year + action_month + str(startDay), "%Y%m%d")[0:6]))
 
             for i in reversed(range(1, startDay)):
-                verpasstDatum = dateTimeTmp2.strftime("%Y%m%d")
+                verpasstDatum = dateTimeTmp2.strftime("%Y-%m-%d")
                 menu_title = dateTimeTmp2.strftime("%d.%m.%Y")
-                menu_action = self.rootLink + "/mediathek/verpasst109-extapponly_date-" + verpasstDatum + "_branding-ndrtv.html"
+                menu_action = self.rootLink + "/mediathek/sendung_verpasst/epg1490_date-" + verpasstDatum + "_display-onlyvideo.html"
                 self.gui.buildVideoLink(DisplayObject(menu_title, "", "", "description", menu_action, False), self, nodeCount)
                 nodeCount = nodeCount + 1
                 dateTimeTmp2 = dateTimeTmp2-datetime.timedelta(1)
@@ -170,31 +170,16 @@ class NDRMediathek(Mediathek):
         htmlPage = self.loadPage(link)
 
         re_video_item = re.compile(
-            '<a href="(.*?)" title=".*?"\\s*>(.*?)</a>'
+            '<div class="videolinks"><a href="(.*?)" title=".*?" class=\'button epgbutton\' >'
         )
-        re_video_item_sub = re.compile(
-            '<a title=".*?" href="(.*?)">\\s*?'
-            '<span class="icon icon_video" aria-label="Video starten"></span>\\s*?'
-            '<span class="runtime"></span>\\s*?'
-            '(.*?)</a>'
-        )
-
-        # video_items = re_video_item.findall(htmlPage)
-        # video_sub_items = re_video_item_sub.search(htmlPage)
-        video_items = re.split('<li\\s*?class="program hasVideo(?: regioprg)? ">', htmlPage)
+        # won't parse "Beiträge", they are only cutted parts of the main
+        # program
+        video_items = re.findall(re_video_item, htmlPage)
         nodeCount = initCount + len(video_items)
-        print len(video_items)
-        for v_item in video_items[1:]:
-            try:
-                video_link, title = re_video_item.search(v_item).groups()
-            except:
-                print v_item
-                break
+        for video_link in video_items:
             if not re.compile("http://www.n-joy.de/.*").search(video_link):
                 print video_link
                 self.extractVideoInformation(video_link, None, nodeCount)
-            # TODO: parse REGIONALPROGRAMM
-            # TODO: parse Beiträge
 
 
     def buildPageMenuVideoList(self, link, initCount):
@@ -229,10 +214,12 @@ class NDRMediathek(Mediathek):
                 self.extractVideoInformation(videoLink, dateTime, nodeCount)
 
         # Pagination (weiter)
-        regex_extractNextPage = re.compile("<a title=\"(.*?)\" href=\"(.*?)\" class=\"button iconbutton square\".*?>")
+        regex_extractNextPage = re.compile(
+            "<a class=\"square button\" href=\"(.*?)\" title=\"(.*?)\".*?>"
+        )
         for nextPageHref in regex_extractNextPage.finditer(htmlPage):
-            menuItemName = nextPageHref.group(1).decode("UTF-8")
-            link = self.rootLink+nextPageHref.group(2)
+            menuItemName = nextPageHref.group(2).decode("UTF-8")
+            link = self.rootLink+nextPageHref.group(1)
             self.gui.buildVideoLink(DisplayObject(menuItemName, "", "", "description", link, False), self, nodeCount)
 
     def buildPageMenu(self, link, initCount):
