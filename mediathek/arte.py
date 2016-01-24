@@ -49,7 +49,7 @@ class ARTEMediathek(Mediathek):
     self.menuTree = (
       TreeNode("0","Neuste Videos",self.rootLink+"/guide/de",True),
       TreeNode("1","Arte+7","",False, (
-        TreeNode("1.0",u"Alle Videos",self.rootLink+"/guide/de/plus7?regions=ALL%2Cdefault%2CDE_FR%2CSAT%2CEUR_DE_FR",True),
+        TreeNode("1.0",u"Alle Videos",self.rootLink+"/guide/de/plus7",True),
         TreeNode("1.1",u"Ausgewählte Videos",self.rootLink+"/guide/de/plus7/selection?regions=ALL%2Cdefault%2CDE_FR%2CSAT%2CEUR_DE_FR",True),
         TreeNode("1.2","Meistgesehen",self.rootLink+"/guide/de/plus7/plus_vues?regions=ALL%2Cdefault%2CDE_FR%2CSAT%2CEUR_DE_FR",True),
         TreeNode("1.3","Letzte Chance",self.rootLink+"/guide/de/plus7/derniere_chance?regions=ALL%2Cdefault%2CDE_FR%2CSAT%2CEUR_DE_FR",True),
@@ -93,16 +93,18 @@ class ARTEMediathek(Mediathek):
       )),
     );
     
-    self.regex_VideoPageLinksHTML = re.compile("href=[\"'](/guide/de/\d{6}-\d{3}/.+?)[\"']");
+    self.regex_VideoPageLinksHTML = re.compile("href=[\"'](http:\\\\/\\\\/www\\.arte\\.tv\\\\/guide\\\\/de\\\\/\d{6}-\d{3}/.+?)[\"']");
     self.regex_VideoPageLinksJSON = re.compile("\"url\":\"((http:\\\\/\\\\/www\\.arte\\.tv){0,1}\\\\/guide\\\\/de\\\\/\d{6}-\d{3}\\\\/.+?)\"");
     
-    
+    self.regex_findVideoIds = re.compile("\"id\":\"(\d{6}-\d{3})(-A)\"");
     
     self.regex_JSONPageLink = re.compile("http://arte.tv/papi/tvguide/videos/stream/player/D/\d{6}-\d{3}.+?/ALL/ALL.json");
     self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?\"versionShortLibelle\":\"([a-zA-Z]{2})\".*?}");
     self.regex_JSON_ImageLink = re.compile("\"original\":\"(http://www.arte.tv/papi/tvguide/images/.*?.jpg)\"");
     self.regex_JSON_Detail = re.compile("\"VDE\":\"(.*?)\"");
     self.regex_JSON_Titel = re.compile("\"VTI\":\"(.*?)\"");
+    
+    self.jsonLink = "http://arte.tv/papi/tvguide/videos/stream/player/D/%s_PLUS7-D/ALL/ALL.json"
     
     
     
@@ -120,11 +122,11 @@ class ARTEMediathek(Mediathek):
   def extractVideoLinks(self, htmlPage, initCount):
     links = set();
     jsonLinks = set();
-    for videoPageLink in self.regex_VideoPageLinksHTML.finditer(htmlPage):
-      link = videoPageLink.group(1);
-      
-      if(link not in links):
-        links.add(link);
+    for videoPageLink in self.regex_findVideoIds.finditer(htmlPage):
+      link = self.jsonLink%videoPageLink.group(1)
+      self.gui.log(link);
+      if(link not in jsonLinks):
+        jsonLinks.add(link);
 
     for videoPageLink in self.regex_VideoPageLinksJSON.finditer(htmlPage):
       link = videoPageLink.group(1).replace("\\/","/");
@@ -172,9 +174,22 @@ class ARTEMediathek(Mediathek):
         videoLinks[3] = SimpleLink(url,0);
     if(len(videoLinks) == 0):
       return;
-    picture = self.regex_JSON_ImageLink.search(jsonPage).group(1);
-    title = self.regex_JSON_Titel.search(jsonPage).group(1);
-    detail =  self.regex_JSON_Detail.search(jsonPage).group(1);
+    
+    picture = None
+    title = None
+    detail = None
+    
+    result = self.regex_JSON_ImageLink.search(jsonPage);
+    if(result is not None):
+      picture = result.group(1);
+    
+    result = self.regex_JSON_Titel.search(jsonPage);
+    if(result is not None):
+      title = result.group(1);
+    
+    result = self.regex_JSON_Detail.search(jsonPage);
+    if(result is not None):
+      detail =  result.group(1);
     
     self.gui.buildVideoLink(DisplayObject(title,"",picture,detail,videoLinks,True, None),self,linkCount);
 	
