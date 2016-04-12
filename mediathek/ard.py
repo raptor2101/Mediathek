@@ -70,7 +70,7 @@ class ARDMediathek(Mediathek):
     self.pageSelectString = "&mcontent%s=page.%s"
     self.regex_DetermineSelectedPage = re.compile("&mcontents{0,1}=page.(\d+)");
     
-    self.regex_videoLinks = re.compile("\"_quality\":(\d).*?\"_stream\":\"(.*?)\"");
+    self.regex_videoLinks = re.compile("\"_quality\":(\d).*?\"_stream\":\[?\"(.*?)\"");
     self.regex_pictureLink = re.compile("_previewImage\":\"(.*?)\"");
     
     
