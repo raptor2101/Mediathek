@@ -53,15 +53,20 @@ class ARDMediathek(Mediathek):
                         TreeNode("1.25","Y",self.rootLink+"/tv/sendungen-a-z?buchstabe=Y",True),
                         TreeNode("1.26","Z",self.rootLink+"/tv/sendungen-a-z?buchstabe=Z",True),
                         )),
-		      TreeNode("2","Reportagen und Dokus",self.rootLink+"/tv/Reportage-Doku/mehr?documentId=21301806",True),
-		      TreeNode("3","Film-Highlights",self.rootLink+"/tv/Film-Highlights/mehr?documentId=21301808",True),
-		      TreeNode("4","Channels","",False,(
-			  TreeNode("4.0","Kinder",self.rootLink+"/tv/Kinder-Familie/mehr?documentId=21282542",True),
-			  TreeNode("4.1","Satire & Unterhaltung",self.rootLink+"/tv/Satire-Unterhaltung/mehr?documentId=21282544",True),
-			  TreeNode("4.2","Kultur",self.rootLink+"/tv/Kultur/mehr?documentId=21282546",True),
-			  TreeNode("4.3","Serien & Soaps",self.rootLink+"/tv/Serien-Soaps/mehr?documentId=21282548",True),
-			  TreeNode("4.4","Wissen",self.rootLink+"/tv/Wissen/mehr?documentId=21282530",True),
-			))
+                      TreeNode("2","Ausgewählte Dokus".decode("utf-8"),self.rootLink+"/tv/Ausgew%C3%A4hlte-Dokus/mehr?documentId=33649086",True),
+                      TreeNode("3","Ausgewählte Filme".decode("utf-8"),self.rootLink+"/tv/Ausgew%C3%A4hlte-Filme/mehr?documentId=33649088",True),
+                      TreeNode("4","Alle Reportagen und Dokus",self.rootLink+"/tv/Alle-Dokus-Reportagen/mehr?documentId=29897596",True),
+                      TreeNode("5","Alle Filme",self.rootLink+"/tv/Alle-Filme/mehr?documentId=33594630",True),
+                      TreeNode("6","Rubriken","",False,(
+                        TreeNode("6.0","Kinder",self.rootLink+"/tv/Kinder/Tipps?documentId=21282542",True),
+                        TreeNode("6.1","Unterhaltung & Comedy",self.rootLink+"/tv/Unterhaltung-Comedy/mehr?documentId=21282544",True),
+                        TreeNode("6.2","Kultur",self.rootLink+"/tv/Kultur/mehr?documentId=21282546",True),
+                        TreeNode("6.3","Wissen",self.rootLink+"/tv/Wissen/mehr?documentId=21282530",True),
+                        TreeNode("6.4","Politik",self.rootLink+"/tv/Politik/mehr?documentId=29684598",True),
+                        TreeNode("6.5","Ratgeber",self.rootLink+"/tv/Ratgeber/mehr?documentId=27112994",True),
+                        TreeNode("6.6","Krimi",self.rootLink+"/tv/Krimi/mehr?documentId=27258656",True),
+                        TreeNode("6.7","Reise",self.rootLink+"/tv/Reise/mehr?documentId=29769608",True),
+                        )),
                       )
     self.configLink = self.rootLink+"/play/media/%s?devicetype=pc&feature=flash"
                                                      #.*Video\?bcastId=\d+&amp;documentId=(\d+)\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)</p>\s+?<h4 class=\"headline\">(.*?)</h4>
