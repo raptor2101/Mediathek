@@ -160,6 +160,6 @@ class ARDMediathek(Mediathek):
     match = self.regex_pictureLink.search(videoPage)  
     picture = None
     if(match is not None):
-      picture = self.rootLink+match.group(1);
+      picture = match.group(1);
     if(len(videoLinks)>0):
       self.gui.buildVideoLink(DisplayObject(title, subTitle,picture,"",videoLinks,True,date,duration),self,nodeCount);
