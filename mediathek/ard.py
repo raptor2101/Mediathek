@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-import re, time;
+import re, time, datetime;
 from mediathek import *
 
 class ARDMediathek(Mediathek):
@@ -72,7 +72,7 @@ class ARDMediathek(Mediathek):
                       )
     self.configLink = self.rootLink+"/play/media/%s?devicetype=pc&feature=flash"
                                                      #.*Video\?bcastId=\d+&amp;documentId=(\d+)\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)</p>\s+?<h4 class=\"headline\">(.*?)</h4>
-    self.regex_VideoPageLink = re.compile("<a href=\".*Video\?.*?documentId=(\d+).*?\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)</p>\s+?<h4 class=\"headline\">(.*?)</h4>")
+    self.regex_VideoPageLink = re.compile("<a href=\".*Video\?.*?documentId=(\d+).*?\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)<\/p>\s+?<h4 class=\"headline\">(.*?)<\/h4>\s+?<p class=\"subtitle\">(\d+.\d+.\d+) \| (\d*)")
     self.regex_CategoryPageLink = re.compile("<a href=\"(.*(?:Sendung|Thema)\?.*?documentId=\d+.*?)\" class=\"textLink\">(?:.|\n)+?<h4 class=\"headline\">(.*?)<\/h4>")
     self.pageSelectString = "&mcontent%s=page.%s"
     self.regex_DetermineSelectedPage = re.compile("&mcontents{0,1}=page.(\d+)");
@@ -135,13 +135,17 @@ class ARDMediathek(Mediathek):
       videoId = element.group(1);
       title = element.group(2).decode('utf-8');
       subTitle = element.group(3).decode('utf-8');
-      self.decodeVideoInformation(videoId, title, subTitle, counter);
+      datestring = element.group(4).decode('utf-8');
+      date = datetime.date(*[int(x) for x in datestring.split('.')[::-1]]).timetuple()
+      durationstring = element.group(5).decode('utf-8');
+      duration = int(durationstring) * 60;
+      self.decodeVideoInformation(videoId, title, subTitle, counter, date, duration);
     
     
     
     return counter;
     
-  def decodeVideoInformation(self, videoId, title, subTitle, nodeCount):
+  def decodeVideoInformation(self, videoId, title, subTitle, nodeCount, date, duration):
     link = self.configLink%videoId;
     self.gui.log("VideoLink: "+link);
     videoPage = self.loadPage(link);
@@ -158,4 +162,4 @@ class ARDMediathek(Mediathek):
     if(match is not None):
       picture = self.rootLink+match.group(1);
     if(len(videoLinks)>0):
-      self.gui.buildVideoLink(DisplayObject(title, subTitle,picture,"",videoLinks,True,None,0),self,nodeCount);
+      self.gui.buildVideoLink(DisplayObject(title, subTitle,picture,"",videoLinks,True,date,duration),self,nodeCount);
