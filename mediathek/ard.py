@@ -72,7 +72,7 @@ class ARDMediathek(Mediathek):
                       )
     self.configLink = self.rootLink+"/play/media/%s?devicetype=pc&feature=flash"
                                                      #.*Video\?bcastId=\d+&amp;documentId=(\d+)\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)</p>\s+?<h4 class=\"headline\">(.*?)</h4>
-    self.regex_VideoPageLink = re.compile("<a href=\".*Video\?.*?documentId=(\d+).*?\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)<\/p>\s+?<h4 class=\"headline\">(.*?)<\/h4>\s+?<p class=\"subtitle\">(\d+.\d+.\d+) \| (\d*)")
+    self.regex_VideoPageLink = re.compile("<a href=\".*Video\?.*?documentId=(\d+).*?\" class=\"textLink\">\s+?<p class=\"dachzeile\">(.*?)<\/p>\s+?<h4 class=\"headline\">(.*?)<\/h4>\s+?<p class=\"subtitle\">(?:(\d+.\d+.\d+) \| )?(\d*) Min.")
     self.regex_CategoryPageLink = re.compile("<a href=\"(.*(?:Sendung|Thema)\?.*?documentId=\d+.*?)\" class=\"textLink\">(?:.|\n)+?<h4 class=\"headline\">(.*?)<\/h4>")
     self.pageSelectString = "&mcontent%s=page.%s"
     self.regex_DetermineSelectedPage = re.compile("&mcontents{0,1}=page.(\d+)");
@@ -135,8 +135,11 @@ class ARDMediathek(Mediathek):
       videoId = element.group(1);
       title = element.group(2).decode('utf-8');
       subTitle = element.group(3).decode('utf-8');
-      datestring = element.group(4).decode('utf-8');
-      date = datetime.date(*[int(x) for x in datestring.split('.')[::-1]]).timetuple()
+      if element.group(4):
+        datestring = element.group(4).decode('utf-8');
+        date = datetime.date(*[int(x) for x in datestring.split('.')[::-1]]).timetuple()
+      else:
+        date = None
       durationstring = element.group(5).decode('utf-8');
       duration = int(durationstring) * 60;
       self.decodeVideoInformation(videoId, title, subTitle, counter, date, duration);
