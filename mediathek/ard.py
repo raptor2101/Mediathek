@@ -122,7 +122,10 @@ class ARDMediathek(Mediathek):
       
   def extractElements(self,mainPage):
     videoElements = list(self.regex_VideoPageLink.finditer(mainPage));
-    linkElements = list(self.regex_CategoryPageLink.finditer(mainPage));
+    if len(videoElements) == 0:
+      linkElements = list(self.regex_CategoryPageLink.finditer(mainPage));
+    else:
+      linkElements = []
     
     counter = len(videoElements) + len(linkElements);
     for element in linkElements:
