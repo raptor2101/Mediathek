@@ -22,41 +22,13 @@ import json
 class ZDFMediathek(Mediathek):
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
-    if(self.gui.preferedStreamTyp == 0):
-      self.baseType = "http_na_na";
-    elif (self.gui.preferedStreamTyp == 1):  
-      self.baseType = "rtmp_smil_http"
-    elif (self.gui.preferedStreamTyp == 2):
-      self.baseType ="mms_asx_http";
-    else:
-      self.baseType ="rtsp_mov_http";
     
     self.menuTree = (
       TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
-      TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
+      TreeNode("1","Ketegorieren","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
+      TreeNode("2","Sendungen von A-Z","https://zdf-cdn.live.cellular.de/mediathekV2/brands-alphabetical",True),
+      TreeNode("3","Sendung verpasst?","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s",True)
       );
-    regex_imageLink = "/ZDFmediathek/contentblob/\\d+/timg\\d+x\\d+blob/\\d+";
-    #ZDFmediathek/beitrag/live/
-    self.regex_videoPageLink = "/ZDFmediathek/beitrag/((video)|(live))/\\d+?/.*flash=off";
-    self.regex_topicPageLink = "/ZDFmediathek/((kanaluebersicht/aktuellste/\\d+.*)|(hauptnavigation/nachrichten/ganze-sendungen.*))flash=off";
-    self._regex_extractTopicObject = re.compile("<li.*\\s*<div class=\"image\">\\s*<a href=\""+self.regex_topicPageLink+"\">\\s*<img src=\""+regex_imageLink+"\" title=\".*\" alt=\".*\"/>\\s*</a>\\s*</div>\\s*<div class=\"text\">\\s*<p( class=\".*\"){0,1}>\\s*<a href=\""+self.regex_topicPageLink+"\"( class=\"orangeUpper\"){0,1}>.*</a>\\s*</p>\\s*<p>\\s*<b>\\s*<a href=\""+self.regex_topicPageLink+"\">\\s*.*</a>");
-    self._regex_extractPageNavigation = re.compile("<a href=\""+self.regex_topicPageLink+"\" .*>.*?</a>");
-    
-    
-    self._regex_extractPictureLink = re.compile(regex_imageLink);
-    self._regex_extractPicSize = re.compile("\\d{2,4}x\\d{2,4}");
-    
-    self._regex_extractTopicPageLink = re.compile(self.regex_topicPageLink);    
-    self._regex_extractTopicTitle = re.compile("<a href=\"/ZDFmediathek/.*flash=off\".*>[^<].*</a>");
-    
-    self._regex_extractVideoPageLink = re.compile(self.regex_videoPageLink);
-    self._regex_extractVideoID = re.compile("/\\d+/");
-    self._regex_extractVideoLink = re.compile("");
-    self.replace_html = re.compile("<.*?>");
-    
-    self.rootLink = "http://www.zdf.de";
-    self.searchSite = "http://www.zdf.de/ZDFmediathek/suche?flash=off"
-    self.xmlService = "http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=%s&ak=web";
   @classmethod
   def name(self):
     return "ZDF";
@@ -70,17 +42,24 @@ class ZDFMediathek(Mediathek):
   def buildPageMenu(self, link, initCount):
     self.gui.log("buildPageMenu: "+link);
     jsonObject = json.loads(self.loadPage(link));
-    self.gui.storeJsonFile(jsonObject);
+    callhash = self.gui.storeJsonFile(jsonObject);
     
     counter=0;
-    for clusterObject in jsonObject["cluster"]:
-      if clusterObject["type"]=="teaser":
-        path = "cluster.%d.teaser"%(counter)
-        self.gui.buildJsonLink(self,clusterObject["name"],path,initCount)
-      counter=counter+1;
+    
+    if("stage" in jsonObject):
+      for stageObject in jsonObject["stage"]:
+        if(stageObject["type"]=="video"):
+          self.buildVideoLink(stageObject,counter);
+    
+    if("cluster" in jsonObject):
+      for clusterObject in jsonObject["cluster"]:
+        if clusterObject["type"].startswith("teaser"):
+          path = "cluster.%d.teaser"%(counter)
+          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,counter)
+        counter=counter+1;
       
-  def buildJsonMenu(self, path, initCount):
-    jsonObject=self.gui.loadJsonFile();
+  def buildJsonMenu(self, path,callhash, initCount):
+    jsonObject=self.gui.loadJsonFile(callhash);
     jsonObject=self.walkJson(path,jsonObject);
    
     categoriePages=[];
@@ -120,11 +99,18 @@ class ZDFMediathek(Mediathek):
     for width,imageObject in videoObject["teaserBild"].iteritems():
       if int(width)<=840:
         imageLink=imageObject["url"];
-    link = videoObject["url"];
-    self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
+    if("formitaeten" in videoObject):
+      links = self.extractLinks(jsonObject);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,counter);
+    else:
+      link = videoObject["url"];
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
     
   def playVideoFromJsonLink(self,link):
     jsonObject = json.loads(self.loadPage(link));
+    links = self.extractLinks(jsonObject);
+    self.gui.play(links);
+  def extractLinks(self,jsonObject):
     links={};
     for formitaete in jsonObject["document"]["formitaeten"]:
       url = formitaete["url"];
@@ -142,7 +128,7 @@ class ZDFMediathek(Mediathek):
           links[2] = SimpleLink(url, -1); 
         if quality == "veryhigh":
           links[3] = SimpleLink(url, -1);
-    self.gui.play(links);
+    return links;
     
       
     

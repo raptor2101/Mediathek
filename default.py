@@ -97,7 +97,8 @@ else:
       gui.back();
   elif(action == "openJsonPath"):
     path = params.get("path", "0");
-    mediathek.buildJsonMenu(path,0)
+    callhash = params.get("callhash", "0");
+    mediathek.buildJsonMenu(path,callhash,0)
   elif(action == "openJsonLink"):
     link = urllib.unquote_plus(params.get("link", ""));
     mediathek.playVideoFromJsonLink(link);

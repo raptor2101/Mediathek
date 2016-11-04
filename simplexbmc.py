@@ -18,6 +18,7 @@
 import xbmc, xbmcgui, xbmcplugin,xbmcaddon, sys, urllib, os, time, re 
 from html import transformHtmlCodes
 import json
+import hashlib
 
 regex_findLink = re.compile("mms://[^\"]*wmv");
 
@@ -107,18 +108,23 @@ class SimpleXbmcGui(object):
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
 
   def storeJsonFile(self,jsonObject):
-    storedJsonFile = os.path.join(self.plugin_profile_dir,"stored.json");
+    hashGenerator = hashlib.md5();
+    hashGenerator.update(sys.argv[2]);
+    callhash = hashGenerator.hexdigest();
+    storedJsonFile = os.path.join(self.plugin_profile_dir,"%s.json"%callhash);
     output = open(storedJsonFile, 'wb');
     json.dump(jsonObject,output);
-  def loadJsonFile(self):
-    storedJsonFile = os.path.join(self.plugin_profile_dir,"stored.json");
+    return callhash;
+  
+  def loadJsonFile(self,callhash):
+    storedJsonFile = os.path.join(self.plugin_profile_dir,"%s.json"%callhash);
     input = open(storedJsonFile,"rb");
     return json.load(input);
 
-  def buildJsonLink(self,mediathek,title,jsonPath,objectCount):
+  def buildJsonLink(self,mediathek,title,jsonPath,callhash,objectCount):
     listItem=xbmcgui.ListItem(title, iconImage="DefaultFolder.png")
     
-    url = "%s?type=%s&action=openJsonPath&path=%s" % (sys.argv[0],mediathek.name(), jsonPath)
+    url = "%s?type=%s&action=openJsonPath&path=%s&callhash=%s" % (sys.argv[0],mediathek.name(), jsonPath,callhash)
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
 
   def listAvaibleMediathekes(self, mediathekNames):
