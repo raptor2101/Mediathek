@@ -70,21 +70,32 @@ class ZDFMediathek(Mediathek):
   def buildPageMenu(self, link, initCount):
     self.gui.log("buildPageMenu: "+link);
     jsonObject = json.loads(self.loadPage(link));
+    self.gui.storeJsonFile(jsonObject);
     
+    counter=0;
+    for clusterObject in jsonObject["cluster"]:
+      if clusterObject["type"]=="teaser":
+        path = "cluster.%d.teaser"%(counter)
+        self.gui.buildJsonLink(self,clusterObject["name"],path,initCount)
+      counter=counter+1;
+      
+  def buildJsonMenu(self, path, initCount):
+    jsonObject=self.gui.loadJsonFile();
+    jsonObject=self.walkJson(path,jsonObject);
+   
     categoriePages=[];
-    videoPages=[];
-    for categorie in jsonObject["cluster"]:
-      if "teaser" in categorie:
-        for videoObject in categorie["teaser"]:
-          self.gui.log(videoObject["type"])
-          if videoObject["type"] == "brand":
-            categoriePages.append(videoObject);
-          if videoObject["type"] == "video" and len(videoPages) < 50:
-            videoPages.append(videoObject);  
+    videoObjects=[];
+    counter=0;
     
-    counter=initCount+len(videoPages)+len(categoriePages);
+    for entry in jsonObject:
+      if entry["type"] == "brand":
+        categoriePages.append(entry);
+      if entry["type"] == "video" and len(videoObjects) < 50:
+        videoObjects.append(entry);  
+    
+    counter=initCount+len(videoObjects)+len(categoriePages);
     self.gui.log("CategoriePages: %d"%len(categoriePages));
-    self.gui.log("VideoPages: %d"%len(videoPages));  
+    self.gui.log("VideoPages: %d"%len(videoObjects));  
     for categoriePage in categoriePages:
       title=categoriePage["titel"];
       subTitle=categoriePage["beschreibung"];
@@ -97,48 +108,44 @@ class ZDFMediathek(Mediathek):
     
     
     
-    for videoPage in videoPages:
-      url = videoPage["url"];
-      jsonObject = json.loads(self.loadPage(url));
-      
-      documentObject = jsonObject["document"];
-      
-      title=documentObject["headline"];
-      subTitle=documentObject["titel"];
-      description=documentObject["beschreibung"];
-      imageLink="";
-      for width,imageObject in documentObject["teaserBild"].iteritems():
-        if int(width)<=840:
-          imageLink=imageObject["url"];
-      
-      links = {};
-      for formitaete in documentObject["formitaeten"]:
-        url = formitaete["url"];
-        quality = formitaete["quality"];
-        hd = formitaete["hd"];
-        self.gui.log("quality:%s hd:%s url:%s"%(quality,hd,url));
-        if hd == True:
-          links[4] = SimpleLink(url, -1); 
-        else:
-          if quality == "low":
-            links[0] = SimpleLink(url, -1); 
-          if quality == "med":
-            links[1] = SimpleLink(url, -1); 
-          if quality == "high":
-            links[2] = SimpleLink(url, -1); 
-          if quality == "veryhigh":
-            links[3] = SimpleLink(url, -1); 
-            
-            
-          
-        
-      
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,counter);
-      
-          
-          
-          
-          
+    for videoObject in videoObjects:
+      self.buildVideoLink(videoObject,counter);
       
       
-  
+  def buildVideoLink(self,videoObject,counter):
+    title=videoObject["headline"];
+    subTitle=videoObject["titel"];
+    description=videoObject["beschreibung"];
+    imageLink="";
+    for width,imageObject in videoObject["teaserBild"].iteritems():
+      if int(width)<=840:
+        imageLink=imageObject["url"];
+    link = videoObject["url"];
+    self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
+    
+  def playVideoFromJsonLink(self,link):
+    jsonObject = json.loads(self.loadPage(link));
+    links={};
+    for formitaete in jsonObject["document"]["formitaeten"]:
+      url = formitaete["url"];
+      quality = formitaete["quality"];
+      hd = formitaete["hd"];
+      self.gui.log("quality:%s hd:%s url:%s"%(quality,hd,url));
+      if hd == True:
+        links[4] = SimpleLink(url, -1); 
+      else:
+        if quality == "low":
+          links[0] = SimpleLink(url, -1); 
+        if quality == "med":
+          links[1] = SimpleLink(url, -1); 
+        if quality == "high":
+          links[2] = SimpleLink(url, -1); 
+        if quality == "veryhigh":
+          links[3] = SimpleLink(url, -1);
+    self.gui.play(links);
+    
+      
+    
+
+    
+    
