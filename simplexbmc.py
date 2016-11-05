@@ -75,7 +75,7 @@ class SimpleXbmcGui(object):
         xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=False,totalItems = objectCount)
       else:
         self.log(displayObject.title);
-        link = self.extractLink(links);
+        link = self.extractLink(displayObject.link);
         
         if(type(link).__name__ == "ComplexLink"):
           self.log("PlayPath:"+ link.playPath);
