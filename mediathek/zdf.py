@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-import re,math,traceback,time
+import re,math,traceback,time,datetime
 from mediathek import *
 import json
     
@@ -23,11 +23,13 @@ class ZDFMediathek(Mediathek):
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     
+    
     self.menuTree = (
       TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
       TreeNode("1","Ketegorieren","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
       TreeNode("2","Sendungen von A-Z","https://zdf-cdn.live.cellular.de/mediathekV2/brands-alphabetical",True),
-      TreeNode("3","Sendung verpasst?","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s",True)
+      TreeNode("3","Sendung verpasst?","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s",True),
+      TreeNode("4","Live TV","https://zdf-cdn.live.cellular.de/mediathekV2/live-tv/%s"%(datetime.datetime.now().strftime("%Y-%m-%d")),True)
       );
   @classmethod
   def name(self):
@@ -53,8 +55,13 @@ class ZDFMediathek(Mediathek):
       for counter, clusterObject in enumerate(jsonObject["cluster"]):
         if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
           path = "cluster.%d.teaser"%(counter)
-          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,counter)
-                
+          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount+counter)
+    if("epgCluster" in jsonObject):
+      for epgObject in jsonObject["epgCluster"]:
+        if("liveStream" in epgObject and len(epgObject["liveStream"])>0):
+          self.buildVideoLink(epgObject["liveStream"], initCount);
+          
+        
   def buildJsonMenu(self, path,callhash, initCount):
     jsonObject=self.gui.loadJsonFile(callhash);
     jsonObject=self.walkJson(path,jsonObject);
@@ -91,6 +98,10 @@ class ZDFMediathek(Mediathek):
   def buildVideoLink(self,videoObject,counter):
     title=videoObject["headline"];
     subTitle=videoObject["titel"];
+    
+    if(len(title)==0):
+      title = subTitle;
+      subTitle = "";
     description=videoObject["beschreibung"];
     imageLink="";
     for width,imageObject in videoObject["teaserBild"].iteritems():
@@ -124,6 +135,8 @@ class ZDFMediathek(Mediathek):
         if quality == "high":
           links[2] = SimpleLink(url, -1); 
         if quality == "veryhigh":
+          links[3] = SimpleLink(url, -1);
+        if quality == "auto":
           links[3] = SimpleLink(url, -1);
     return links;
     
