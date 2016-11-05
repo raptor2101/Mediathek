@@ -64,7 +64,7 @@ class ZDFMediathek(Mediathek):
     
     if("cluster" in jsonObject):
       for counter, clusterObject in enumerate(jsonObject["cluster"]):
-        if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
+        if "teaser" in clusterObject and "name" in clusterObject:
           path = "cluster.%d.teaser"%(counter)
           self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount)
     if("broadcastCluster" in jsonObject):
