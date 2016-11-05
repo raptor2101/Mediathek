@@ -64,8 +64,9 @@ class SimpleXbmcGui(object):
         link = displayObject.link[0]
         
         url = "%s?type=%s&action=openPlayList&link=%s" % (sys.argv[0],mediathek.name(), urllib.quote_plus(link.basePath))
-        listItem.setProperty('IsPlayable', 'true');
-        xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=False,totalItems = objectCount)
+        
+        self.log(url);
+        xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
       elif(displayObject.isPlayable == "JsonLink"):
         link = displayObject.link
         
