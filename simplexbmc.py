@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 import xbmc, xbmcgui, xbmcplugin,xbmcaddon, sys, urllib, os, time, re 
 from html import transformHtmlCodes
+import json
+import hashlib
 
 regex_findLink = re.compile("mms://[^\"]*wmv");
 
@@ -26,12 +28,16 @@ settings = xbmcaddon.Addon(id='plugin.video.mediathek')
 translation = settings.getLocalizedString
 
 class SimpleXbmcGui(object):
-  def __init__(self):
+  def __init__(self,settings):
     self.settings = xbmcaddon.Addon(id='plugin.video.mediathek');
     self.quality = int(xbmcplugin.getSetting(int(sys.argv[1]), "quality" ));
     self.preferedStreamTyp = int(xbmcplugin.getSetting(int(sys.argv[1]), "preferedStreamType"));
     
     self.log("quality: %s"%(self.quality));
+    
+    self.plugin_profile_dir = xbmc.translatePath(settings.getAddonInfo("profile"))
+    if not os.path.exists(self.plugin_profile_dir):
+      os.mkdir(self.plugin_profile_dir);
     
   def log(self, msg):
     if type(msg) not in (str, unicode):
@@ -102,10 +108,24 @@ class SimpleXbmcGui(object):
     url = "%s?type=%s&action=openMenu&path=%s" % (sys.argv[0],mediathek.name(), menuObject.path)
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
 
-  def buildJsonLink(self,mediathek,title,link,jsonPath,objectCount):
+  def storeJsonFile(self,jsonObject):
+    hashGenerator = hashlib.md5();
+    hashGenerator.update(sys.argv[2]);
+    callhash = hashGenerator.hexdigest();
+    storedJsonFile = os.path.join(self.plugin_profile_dir,"%s.json"%callhash);
+    output = open(storedJsonFile, 'wb');
+    json.dump(jsonObject,output);
+    return callhash;
+  
+  def loadJsonFile(self,callhash):
+    storedJsonFile = os.path.join(self.plugin_profile_dir,"%s.json"%callhash);
+    input = open(storedJsonFile,"rb");
+    return json.load(input);
+
+  def buildJsonLink(self,mediathek,title,jsonPath,callhash,objectCount):
     listItem=xbmcgui.ListItem(title, iconImage="DefaultFolder.png")
     
-    url = "%s?type=%s&action=openJsonPath&link=%s&path=%s" % (sys.argv[0],mediathek.name(), urllib.quote_plus(link), jsonPath)
+    url = "%s?type=%s&action=openJsonPath&path=%s&callhash=%s" % (sys.argv[0],mediathek.name(), jsonPath,callhash)
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
 
   def listAvaibleMediathekes(self, mediathekNames):
