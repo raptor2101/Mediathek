@@ -55,7 +55,7 @@ class ZDFMediathek(Mediathek):
       for counter, clusterObject in enumerate(jsonObject["cluster"]):
         if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
           path = "cluster.%d.teaser"%(counter)
-          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount+counter)
+          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount)
     if("epgCluster" in jsonObject):
       for epgObject in jsonObject["epgCluster"]:
         if("liveStream" in epgObject and len(epgObject["liveStream"])>0):
@@ -68,7 +68,6 @@ class ZDFMediathek(Mediathek):
    
     categoriePages=[];
     videoObjects=[];
-    counter=0;
     
     for entry in jsonObject:
       if entry["type"] == "brand":
@@ -76,7 +75,6 @@ class ZDFMediathek(Mediathek):
       if entry["type"] == "video" and len(videoObjects) < 50:
         videoObjects.append(entry);  
     
-    counter=initCount+len(videoObjects)+len(categoriePages);
     self.gui.log("CategoriePages: %d"%len(categoriePages));
     self.gui.log("VideoPages: %d"%len(videoObjects));  
     for categoriePage in categoriePages:
@@ -87,12 +85,12 @@ class ZDFMediathek(Mediathek):
         if int(width)<=840:
           imageLink=imageObject["url"];
       url = categoriePage["url"];
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,"",url,False),self,counter);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,"",url,False),self,initCount);
     
     
     
     for videoObject in videoObjects:
-      self.buildVideoLink(videoObject,counter);
+      self.buildVideoLink(videoObject,initCount);
       
       
   def buildVideoLink(self,videoObject,counter):
