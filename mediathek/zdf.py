@@ -28,7 +28,7 @@ class ZDFMediathek(Mediathek):
     
     self.menuTree = (
       TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
-      TreeNode("1","Ketegorieren","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
+      TreeNode("1","Kategorien","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
       TreeNode("2","Sendungen von A-Z","https://zdf-cdn.live.cellular.de/mediathekV2/brands-alphabetical",True),
       TreeNode("3","Sendung verpasst?","",False,(
         TreeNode("3.0","Heute","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%(today.strftime("%Y-%m-%d")),True),
