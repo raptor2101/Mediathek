@@ -124,10 +124,10 @@ class ZDFMediathek(Mediathek):
         imageLink=imageObject["url"];
     if("formitaeten" in videoObject):
       links = self.extractLinks(videoObject);
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,counter);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True,None,int(videoObject['length'])),self,counter);
     else:
       link = videoObject["url"];
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink",None,int(videoObject['length'])),self,counter);
     
   def playVideoFromJsonLink(self,link):
     jsonObject = json.loads(self.loadPage(link));
