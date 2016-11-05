@@ -28,7 +28,7 @@ class ZDFMediathek(Mediathek):
     
     self.menuTree = (
       TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
-      TreeNode("1","Ketegorieren","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
+      TreeNode("1","Kategorien","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
       TreeNode("2","Sendungen von A-Z","https://zdf-cdn.live.cellular.de/mediathekV2/brands-alphabetical",True),
       TreeNode("3","Sendung verpasst?","",False,(
         TreeNode("3.0","Heute","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%(today.strftime("%Y-%m-%d")),True),
@@ -64,7 +64,7 @@ class ZDFMediathek(Mediathek):
     
     if("cluster" in jsonObject):
       for counter, clusterObject in enumerate(jsonObject["cluster"]):
-        if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
+        if "teaser" in clusterObject and "name" in clusterObject:
           path = "cluster.%d.teaser"%(counter)
           self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount)
     if("broadcastCluster" in jsonObject):
@@ -124,10 +124,10 @@ class ZDFMediathek(Mediathek):
         imageLink=imageObject["url"];
     if("formitaeten" in videoObject):
       links = self.extractLinks(videoObject);
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,counter);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True,None,videoObject.get('length')),self,counter);
     else:
       link = videoObject["url"];
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink",None,videoObject.get('length')),self,counter);
     
   def playVideoFromJsonLink(self,link):
     jsonObject = json.loads(self.loadPage(link));

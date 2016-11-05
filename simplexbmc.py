@@ -71,6 +71,11 @@ class SimpleXbmcGui(object):
         
         url = "%s?type=%s&action=openJsonLink&link=%s" % (sys.argv[0],mediathek.name(), urllib.quote_plus(link))
         listItem.setProperty('IsPlayable', 'true');
+        listItem.setInfo("video", {
+          "title": title,
+          "plot": transformHtmlCodes(displayObject.description),
+          "duration": displayObject.duration
+        })
         xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=False,totalItems = objectCount)
       else:
         self.log(displayObject.title);
