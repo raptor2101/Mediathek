@@ -44,16 +44,19 @@ class ZDFMediathek(Mediathek):
     jsonObject = json.loads(self.loadPage(link));
     callhash = self.gui.storeJsonFile(jsonObject);
     
+    counter=0;
+    
     if("stage" in jsonObject):
       for stageObject in jsonObject["stage"]:
         if(stageObject["type"]=="video"):
-          self.buildVideoLink(stageObject);
+          self.buildVideoLink(stageObject,counter);
     
     if("cluster" in jsonObject):
-      for counter, clusterObject in enumerate(jsonObject["cluster"]):
-        if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
+      for clusterObject in jsonObject["cluster"]:
+        if clusterObject["type"].startswith("teaser"):
           path = "cluster.%d.teaser"%(counter)
           self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,counter)
+        counter=counter+1;
       
   def buildJsonMenu(self, path,callhash, initCount):
     jsonObject=self.gui.loadJsonFile(callhash);
@@ -85,10 +88,10 @@ class ZDFMediathek(Mediathek):
     
     
     for videoObject in videoObjects:
-      self.buildVideoLink(videoObject);
+      self.buildVideoLink(videoObject,counter);
       
       
-  def buildVideoLink(self,videoObject):
+  def buildVideoLink(self,videoObject,counter):
     title=videoObject["headline"];
     subTitle=videoObject["titel"];
     description=videoObject["beschreibung"];
@@ -97,19 +100,19 @@ class ZDFMediathek(Mediathek):
       if int(width)<=840:
         imageLink=imageObject["url"];
     if("formitaeten" in videoObject):
-      links = self.extractLinks(videoObject);
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,1);
+      links = self.extractLinks(jsonObject);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True),self,counter);
     else:
       link = videoObject["url"];
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,1);
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,link,"JsonLink"),self,counter);
     
   def playVideoFromJsonLink(self,link):
     jsonObject = json.loads(self.loadPage(link));
-    links = self.extractLinks(jsonObject["document"]);
+    links = self.extractLinks(jsonObject);
     self.gui.play(links);
   def extractLinks(self,jsonObject):
     links={};
-    for formitaete in jsonObject["formitaeten"]:
+    for formitaete in jsonObject["document"]["formitaeten"]:
       url = formitaete["url"];
       quality = formitaete["quality"];
       hd = formitaete["hd"];
