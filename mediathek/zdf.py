@@ -15,21 +15,32 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-import re,math,traceback,time,datetime
+import re,math,traceback,time
 from mediathek import *
+from datetime import datetime,timedelta
 import json
     
 class ZDFMediathek(Mediathek):
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     
+    today = datetime.today();
     
     self.menuTree = (
       TreeNode("0","Startseite","https://zdf-cdn.live.cellular.de/mediathekV2/start-page",True),
       TreeNode("1","Ketegorieren","https://zdf-cdn.live.cellular.de/mediathekV2/categories",True),
       TreeNode("2","Sendungen von A-Z","https://zdf-cdn.live.cellular.de/mediathekV2/brands-alphabetical",True),
-      TreeNode("3","Sendung verpasst?","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s",True),
-      TreeNode("4","Live TV","https://zdf-cdn.live.cellular.de/mediathekV2/live-tv/%s"%(datetime.datetime.now().strftime("%Y-%m-%d")),True)
+      TreeNode("3","Sendung verpasst?","",False,(
+        TreeNode("3.0","Heute","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%(today.strftime("%Y-%m-%d")),True),
+        TreeNode("3.1","Gestern","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=1)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.2","Vorgestern","https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=2)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.3",(today-timedelta(days=3)).strftime("%A"),"https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=3)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.4",(today-timedelta(days=4)).strftime("%A"),"https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=4)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.5",(today-timedelta(days=5)).strftime("%A"),"https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=5)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.6",(today-timedelta(days=6)).strftime("%A"),"https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=6)).strftime("%Y-%m-%d")),True),
+        TreeNode("3.7",(today-timedelta(days=7)).strftime("%A"),"https://zdf-cdn.live.cellular.de/mediathekV2/broadcast-missed/%s"%((today-timedelta(days=7)).strftime("%Y-%m-%d")),True),
+        )),
+      TreeNode("4","Live TV","https://zdf-cdn.live.cellular.de/mediathekV2/live-tv/%s"%(today.strftime("%Y-%m-%d")),True)
       );
   @classmethod
   def name(self):
@@ -56,10 +67,16 @@ class ZDFMediathek(Mediathek):
         if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
           path = "cluster.%d.teaser"%(counter)
           self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount)
+    if("broadcastCluster" in jsonObject):
+      for counter, clusterObject in enumerate(jsonObject["broadcastCluster"]):
+        if clusterObject["type"].startswith("teaser") and "name" in clusterObject:
+          path = "broadcastCluster.%d.teaser"%(counter)
+          self.gui.buildJsonLink(self,clusterObject["name"],path,callhash,initCount)
     if("epgCluster" in jsonObject):
       for epgObject in jsonObject["epgCluster"]:
         if("liveStream" in epgObject and len(epgObject["liveStream"])>0):
           self.buildVideoLink(epgObject["liveStream"], initCount);
+    
           
         
   def buildJsonMenu(self, path,callhash, initCount):
