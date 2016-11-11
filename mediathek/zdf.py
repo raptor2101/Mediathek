@@ -89,7 +89,7 @@ class ZDFMediathek(Mediathek):
     for entry in jsonObject:
       if entry["type"] == "brand":
         categoriePages.append(entry);
-      if entry["type"] == "video" and len(videoObjects) < 50:
+      if entry["type"] == "video":
         videoObjects.append(entry);  
     
     self.gui.log("CategoriePages: %d"%len(categoriePages));
@@ -117,11 +117,13 @@ class ZDFMediathek(Mediathek):
     if(len(title)==0):
       title = subTitle;
       subTitle = "";
-    description=videoObject["beschreibung"];
+    if("beschreibung" in videoObject):
+      description=videoObject["beschreibung"];
     imageLink="";
-    for width,imageObject in videoObject["teaserBild"].iteritems():
-      if int(width)<=840:
-        imageLink=imageObject["url"];
+    if("teaserBild" in videoObject):
+      for width,imageObject in videoObject["teaserBild"].iteritems():
+        if int(width)<=840:
+          imageLink=imageObject["url"];
     if("formitaeten" in videoObject):
       links = self.extractLinks(videoObject);
       self.gui.buildVideoLink(DisplayObject(title,subTitle,imageLink,description,links,True,None,videoObject.get('length')),self,counter);
