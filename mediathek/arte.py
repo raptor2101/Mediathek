@@ -14,7 +14,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re, traceback
 from mediathek import *
 from xml.dom import minidom
@@ -34,7 +34,6 @@ month_replacements = {
     "Oct":"10",
     "Nov":"11",
     "Dec":"12",
-    
   };
 
 class ARTEMediathek(Mediathek):
@@ -47,7 +46,6 @@ class ARTEMediathek(Mediathek):
     self.gui = simpleXbmcGui;
     self.rootLink = "http://www.arte.tv";
     self.menuTree = (
-      
       TreeNode("0","Arte+7","",False, (
         TreeNode("0.0",u"Alle Videos",self.rootLink+"/guide/de/plus7",True),
         TreeNode("0.1","Neuste Videos",self.rootLink+"/guide/de/plus7/alle-videos?sort=recent",True),
@@ -65,33 +63,21 @@ class ARTEMediathek(Mediathek):
         TreeNode("1.7",u"Junior"                    ,self.rootLink+"/guide/de/plus7/junior",True),
       )),
     );
-    
+
     self.regex_VideoPageLinksHTML = re.compile("href=[\"'](http:\\\\/\\\\/www\\.arte\\.tv\\\\/guide\\\\/de\\\\/\d{6}-\d{3}/.+?)[\"']");
     self.regex_VideoPageLinksJSON = re.compile("\"url\":\"((http:\\\\/\\\\/www\\.arte\\.tv){0,1}\\\\/guide\\\\/de\\\\/\d{6}-\d{3}\\\\/.+?)\"");
-    
     self.regex_findVideoIds = re.compile("(\d{6}-\d{3})(-A)");
-    
     self.regex_JSONPageLink = re.compile("http://arte.tv/papi/tvguide/videos/stream/player/D/\d{6}-\d{3}.+?/ALL/ALL.json");
     self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?\"versionShortLibelle\":\"([a-zA-Z]{2})\".*?}");
     self.regex_JSON_ImageLink = re.compile("\"IUR\":\"(http://.*?\\.arte\\.tv/papi/tvguide/images/.*?\\..{3})\"");
     self.regex_JSON_Detail = re.compile("\"VDE\":\"(.*?)\"");
     self.regex_JSON_Titel = re.compile("\"VTI\":\"(.*?)\"");
-    
     self.jsonLink = "http://arte.tv/papi/tvguide/videos/stream/player/D/%s_PLUS7-D/ALL/ALL.json"
-    
-    
-    
-    
   def buildPageMenu(self, link, initCount):
     self.gui.log("buildPageMenu: "+link);
     htmlPage = self.loadPage(link).decode('UTF-8');
     self.extractVideoLinks(htmlPage, initCount);
-  
-  
-  #def searchVideo(self, searchText):
-  #  link = self.searchLink + searchText
-  #  self.buildPageMenu(link,0);
-    
+
   def extractVideoLinks(self, htmlPage, initCount):
     links = set();
     jsonLinks = set();
@@ -103,31 +89,23 @@ class ARTEMediathek(Mediathek):
 
     for videoPageLink in self.regex_VideoPageLinksJSON.finditer(htmlPage):
       link = videoPageLink.group(1).replace("\\/","/");
-      
       if(link not in links):
         links.add(link);
-    
     for link in self.regex_JSONPageLink.finditer(htmlPage):
       jsonLinks.add(link.group(0));
-    
     linkCount = initCount + len(links);
     for link in links:
       if(not link.startswith(self.rootLink)):
         videoPage = self.loadPage(self.rootLink+link);
       else:
         videoPage = self.loadPage(link);
-        
       match = self.regex_JSONPageLink.search(videoPage);
       if(match is not None):
         jsonLinks.add(match.group(0));
-    
-    
     self.gui.log("Found %s unique links"%len(jsonLinks));
-    
     for link in jsonLinks:
       jsonPage = self.loadPage(link).decode('UTF-8');
       self.extractVideoLinksFromJSONPage(jsonPage,linkCount)
-        
   def extractVideoLinksFromJSONPage(self, jsonPage, linkCount):  
     videoLinks = {}
     for match in self.regex_JSON_VideoLink.finditer(jsonPage):
@@ -147,16 +125,16 @@ class ARTEMediathek(Mediathek):
         videoLinks[3] = SimpleLink(url,0);
     if(len(videoLinks) == 0):
       return;
-    
+
     picture = None
     title = None
     detail = None
-    
+
     result = self.regex_JSON_ImageLink.search(jsonPage);
     if(result is not None):
       picture = result.group(1);
       self.gui.log(picture)
-    
+
     result = self.regex_JSON_Titel.search(jsonPage);
     if(result is not None):
       title = result.group(1);
@@ -164,10 +142,5 @@ class ARTEMediathek(Mediathek):
     result = self.regex_JSON_Detail.search(jsonPage);
     if(result is not None):
       detail =  result.group(1);
-    
+
     self.gui.buildVideoLink(DisplayObject(title,"",picture,detail,videoLinks,True, None),self,linkCount);
-	
-   
-    
-    
-      
