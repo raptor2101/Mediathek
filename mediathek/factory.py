@@ -20,9 +20,7 @@ from mediathek.ard import *
 from mediathek.zdf import *
 from mediathek.arte import *
 from mediathek.dreisat import *
-from mediathek.bayerisches import *
 from mediathek.orf import *
-from mediathek.bralpha import *
 from mediathek.ndr import *
 from mediathek.kika import *
 
