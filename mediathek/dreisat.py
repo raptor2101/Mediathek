@@ -144,30 +144,32 @@ class DreiSatMediathek(Mediathek):
         self.extractVideoInformation(itemNode,nodeCount);
       except:
         pass
+
   def parseDate(self,dateString):
     dateString = regex_dateString.search(dateString).group();
     for month in month_replacements.keys():
       dateString = dateString.replace(month,month_replacements[month]);
     return time.strptime(dateString,"%d %m %Y");
+
   def extractVideoInformation(self, itemNode, nodeCount):
     title = self.readText(itemNode,"title");
+    self.gui.log(title)
     dateString = self.readText(itemNode,"pubDate");
     pubDate = self.parseDate(dateString);
     descriptionNode = itemNode.getElementsByTagName("description")[0].firstChild.data;
     description = unicode(descriptionNode);
-    pictureNode = itemNode.getElementsByTagName("media:thumbnail")[0];
-    picture = pictureNode.getAttribute("url");
+    picture = "";
+    pictureNodes = itemNode.getElementsByTagName("media:thumbnail");
+    if(len(pictureNodes) > 0):
+      picture = pictureNodes[0].getAttribute("url");
     links = {};
     for contentNode in itemNode.getElementsByTagName("media:content"):
-      mediaType = contentNode.getAttribute("type");
-      if(not (self.baseType == mediaType or mediaType == self.webEmType)):
-        continue;
       height = int(contentNode.getAttribute("height"));
       url = contentNode.getAttribute("url");
       size = int(contentNode.getAttribute("fileSize"));
-      if(height < 150):
+      if(height < 300):
         links[0] = SimpleLink(url, size);
-      elif (height < 300):
+      elif (height < 480):
         links[1] = SimpleLink(url, size);
       else:
         links[2] = SimpleLink(url, size);
