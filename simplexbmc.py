@@ -112,9 +112,11 @@ class SimpleXbmcGui(object):
     url = "%s?type=%s&action=openMenu&path=%s" % (sys.argv[0],mediathek.name(), menuObject.path)
     xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=url,listitem=listItem,isFolder=True,totalItems = objectCount)
 
-  def storeJsonFile(self,jsonObject):
+  def storeJsonFile(self,jsonObject,additionalIdentifier):
     hashGenerator = hashlib.md5();
     hashGenerator.update(sys.argv[2]);
+    if(additionalIdentifier is not None):
+      hashGenerator.update(additionalIdentifier);
     callhash = hashGenerator.hexdigest();
     storedJsonFile = os.path.join(self.plugin_profile_dir,"%s.json"%callhash);
     output = open(storedJsonFile, 'wb');
