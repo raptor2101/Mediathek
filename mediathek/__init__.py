@@ -54,7 +54,7 @@ class Mediathek(object):
     try:
       safe_url = url.replace( " ", "%20" ).replace("&amp;","&")
 
-      if(values is not None): 
+      if(values is not None):
         data = urllib.urlencode(values)
         req = urllib2.Request(safe_url, data)
       else:
@@ -71,7 +71,7 @@ class Mediathek(object):
       doc = False;
       while not doc and waittime < maxTimeout:
         try:
-          if waittime > 0: 
+          if waittime > 0:
             time.sleep(waittime);
           self.gui.log("download %s %d"%(safe_url,waittime));
           sock = urllib2.urlopen( req )
@@ -94,7 +94,7 @@ class Mediathek(object):
       return ''
 
   def buildMenu(self, path, treeNode = None):
-    if(type(path) in (str,unicode)):
+    if(isinstance(path, (str,unicode))):
       path = path.split('.');
     if(len(path) > 0):
       index = int(path.pop(0));
@@ -124,7 +124,7 @@ class Mediathek(object):
     path = path.split('.');
     i = 0
     while(i < len(path)):
-      if(type(jsonObject) is list):
+      if(isinstance(jsonObject,list)):
         index = int(path.pop(0));
       else:
         index = path.pop(0);
