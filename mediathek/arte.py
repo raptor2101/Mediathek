@@ -83,9 +83,8 @@ class ARTEMediathek(Mediathek):
         re.compile(regexSourceString%"data-highlightedVideos"),
         re.compile(regexSourceString%"data-latestVideos"),
         re.compile(regexSourceString%"data-categoryVideoSet"),
+        re.compile(regexSourceString%"data-videoSet")
       );
-
-
 
 
   def buildPageMenu(self, link, initCount):
@@ -109,17 +108,16 @@ class ARTEMediathek(Mediathek):
       jsonObject = jsonContent;
     else:
       jsonObject=self.walkJson(path,jsonContent);
-    self.gui.log(json.dumps(jsonObject));
     if("videos" in jsonObject):
       self.extractVideoLinksFromJson(jsonObject);
     if(isinstance(jsonObject,list)):
       for counter,jsonObject in enumerate(jsonObject):
         if("day" in jsonObject):
-          self.gui.buildJsonLink(self,jsonObject["day"],"%d"%counter,callhash,0)
+          name = jsonObject["day"];
+          link = jsonObject["collection_url"];
+          self.gui.buildVideoLink(DisplayObject(name,"","","",link,False,None),self,0);
 
-  def buildJsonLink(self,name,content):
-    content = BeautifulSoup(content);
-    jsonContent = json.loads(content.prettify(formatter=None))
+  def buildJsonLink(self,name,jsonContent):
     callhash = self.gui.storeJsonFile(jsonContent,name);
     self.gui.buildJsonLink(self,name,"init",callhash,0)
 
@@ -130,7 +128,13 @@ class ARTEMediathek(Mediathek):
     for name,regex in self.categories.iteritems():
       match = regex.search(pageContent);
       if(match is not None):
-        self.buildJsonLink(name,match.group(1));
+        content = BeautifulSoup(match.group(1));
+        jsonContent = json.loads(content.prettify(formatter=None))
+        if(isinstance(jsonContent,list)):
+          self.buildJsonLink(name,jsonContent)
+        elif("collection_url" in jsonContent):
+          link = jsonContent["collection_url"];
+          self.gui.buildVideoLink(DisplayObject(name,"","","",link,False,None),self,0);
 
     self.extractVideoLinksFromHtml(pageContent)
 
@@ -199,6 +203,8 @@ class ARTEMediathek(Mediathek):
       return links;
 
     for videoObject in jsonObject["VSR"].itervalues():
+      if( videoObject["versionShortLibelle"] != "DE"):
+        continue;
       if videoObject["mediaType"] == "mp4":
         url = videoObject["url"];
         quality = videoObject["quality"];
