@@ -169,7 +169,8 @@ class ARTEMediathek(Mediathek):
       jsonCategorie = jsonObject["category"]
       title = unicode(jsonCategorie["title"]);
       link=jsonCategorie["url"];
-      self.gui.buildVideoLink(DisplayObject(title,"","","",link,False,None),self,0);
+      
+      self.gui.buildVideoLink(DisplayObject(title,"","","",link,False),self,0);
 
   def buildMenuEntry(self, menuItem):
     title = menuItem["title"];
@@ -178,15 +179,21 @@ class ARTEMediathek(Mediathek):
     self.gui.buildVideoLink(DisplayObject(title,subTitle,"","",link,False,None),self,0);
 
   def buildVideoEntry(self, jsonObject):
-    title = jsonObject["title"];
-    subTitle = jsonObject["subtitle"];
-    detail = jsonObject["teaser"];
+    self.gui.log(json.dumps(jsonObject));
+    title = unicode(jsonObject["title"]);
+    if(jsonObject["subtitle"] is not None):
+      subTitle = unicode(jsonObject["subtitle"]);
+    else:
+      subTitle = None;
+    detail = unicode(jsonObject["teaser"]);
     picture = None;
     for pictureItem in jsonObject["thumbnails"]:
       if(picture is None or picture["width"]<pictureItem["width"]):
         picture = pictureItem;
     link=self.jsonLink%jsonObject["id"];
-    self.gui.buildVideoLink(DisplayObject(title,"",picture["url"],detail,link,"JsonLink", None),self,0);
+    pubDate = time.strptime(jsonObject["scheduled_on"],"%Y-%m-%d");
+    duration = jsonObject["duration"]
+    self.gui.buildVideoLink(DisplayObject(title,subTitle,picture["url"],detail,link,"JsonLink", pubDate,duration),self,0);
 
 
   def playVideoFromJsonLink(self,link):
@@ -252,7 +259,6 @@ class ARTEMediathek(Mediathek):
       self.extractVideoLinksFromJSONPage(jsonPage["videoJsonPlayer"],linkCount)
 
   def extractVideoLinksFromJSONPage(self, jsonPage, linkCount):
-
     videoLinks = self.extractLinks (jsonPage);
     if(len(videoLinks) == 0):
       return;
