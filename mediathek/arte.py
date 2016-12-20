@@ -15,10 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re, traceback, urllib,json;
-from mediathek import *
-from xml.dom import minidom
-from xml.dom import Node;
+import re, traceback,json;
+from mediathek import *;
 from bs4 import BeautifulSoup;
 
 regex_dateString = re.compile("\\d{1,2} ((\\w{3})|(\\d{2})) \\d{4}");
@@ -78,7 +76,7 @@ class ARTEMediathek(Mediathek):
       "Most Viewed": re.compile(regexSourceString%"data-mostViewedVideos"),
       "ExpiringVideos":re.compile(regexSourceString%"data-nextExpiringVideos"),
     }
-    
+
     self.searchContent = re.compile(regexSourceString%"data-results");
     self.regex_extractVideoSources = (
         re.compile(regexSourceString%"data-highlightedVideos"),
@@ -123,7 +121,7 @@ class ARTEMediathek(Mediathek):
     if("videos" in jsonObject):
       self.extractVideoLinksFromJson(jsonObject);
     if(isinstance(jsonObject,list)):
-      for counter,jsonObject in enumerate(jsonObject):
+      for jsonObject in jsonObject:
         if("day" in jsonObject):
           name = jsonObject["day"];
           link = jsonObject["collection_url"];
@@ -182,7 +180,6 @@ class ARTEMediathek(Mediathek):
       jsonCategorie = jsonObject["category"]
       title = unicode(jsonCategorie["title"]);
       link=jsonCategorie["url"];
-      
       self.gui.buildVideoLink(DisplayObject(title,"","","",link,False),self,0);
 
   def buildMenuEntry(self, menuItem):
@@ -230,11 +227,11 @@ class ARTEMediathek(Mediathek):
         quality = videoObject["quality"];
         self.gui.log("%s %s"%(quality,url))
         if quality == "MQ":
-          links[0] = SimpleLink(url, -1); 
+          links[0] = SimpleLink(url, -1);
         if quality == "HQ":
-          links[1] = SimpleLink(url, -1); 
+          links[1] = SimpleLink(url, -1);
         if quality == "EQ":
-          links[2] = SimpleLink(url, -1); 
+          links[2] = SimpleLink(url, -1);
         if quality == "SQ":
           links[3] = SimpleLink(url, -1);
     return links;
