@@ -43,14 +43,14 @@ class ARTEMediathek(Mediathek):
     return "ARTE";
   @classmethod
   def isSearchable(self):
-    return False;
+    return True;
 
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     self.rootLink = "http://www.arte.tv";
     self.basePage = self.rootLink+"/guide/de/plus7";
     self.jsonLink = "https://api.arte.tv/api/player/v1/config/de/%s"
-
+    self.serachLink = self.rootLink+"/guide/de/search?q=%s&scope=plus7&kind=plus7"
     self.menuTree = (
       TreeNode("0","Arte+7","mainPage",True),
       TreeNode("1","Sendungen von A-Z","showCluster",True),
@@ -78,7 +78,8 @@ class ARTEMediathek(Mediathek):
       "Most Viewed": re.compile(regexSourceString%"data-mostViewedVideos"),
       "ExpiringVideos":re.compile(regexSourceString%"data-nextExpiringVideos"),
     }
-
+    
+    self.searchContent = re.compile(regexSourceString%"data-results");
     self.regex_extractVideoSources = (
         re.compile(regexSourceString%"data-highlightedVideos"),
         re.compile(regexSourceString%"data-latestVideos"),
@@ -86,6 +87,17 @@ class ARTEMediathek(Mediathek):
         re.compile(regexSourceString%"data-videoSet")
       );
 
+  def searchVideo(self, searchText):
+    link = self.serachLink%searchText;
+    pageContent = self.loadPage(link).decode('UTF-8');
+    content = self.searchContent.search(pageContent).group(1);
+    content = BeautifulSoup(content);
+    jsonContent = json.loads(content.prettify(formatter=None));
+    linkCount = len(jsonContent["programs"]);
+    for jsonObject in jsonContent["programs"]:
+      link = self.jsonLink%jsonObject["id"];
+      jsonPage = json.loads(self.loadPage(link));
+      self.extractVideoLinksFromJSONPage(jsonPage["videoJsonPlayer"],linkCount)
 
   def buildPageMenu(self, link, initCount):
     if(link == "showCluster"):
@@ -145,6 +157,7 @@ class ARTEMediathek(Mediathek):
       if(match is not None):
         someMatch = True;
         content = BeautifulSoup(match.group(1));
+        self.gui.log(content.prettify(formatter=None));
         jsonContent = json.loads(content.prettify(formatter=None))
         self.extractVideoLinksFromJson(jsonContent)
     return someMatch;
@@ -270,5 +283,16 @@ class ARTEMediathek(Mediathek):
     if("subtitle" in jsonPage):
       subTitle = jsonPage["subtitle"];
 
+    detail = "";
+    if("V7T" in jsonPage):
+      detail = self.gui.transformHtmlCodes(jsonPage["V7T"]);
 
-    self.gui.buildVideoLink(DisplayObject(title,subTitle,picture,"",videoLinks,True, None),self,linkCount);
+    duration = None;
+    if("videoDurationSeconds" in jsonPage):
+      duration = jsonPage["videoDurationSeconds"];
+
+    if("VRA" in jsonPage):
+      pubDate = time.strptime(jsonPage["VRA"],"%d/%m/%Y %H:%M:%S +0000");
+    else:
+      pubDate = time.gmtime();
+    self.gui.buildVideoLink(DisplayObject(title,subTitle,picture,detail,videoLinks,True, pubDate, duration),self,linkCount);
