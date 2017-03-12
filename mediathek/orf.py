@@ -15,9 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re,time,urllib,json;
-from xml.dom import Node;
-from xml.dom import minidom;
+import re,json;
 from mediathek import *
 from bs4 import BeautifulSoup;
 
@@ -28,32 +26,9 @@ class ORFMediathek(Mediathek):
     self.gui = simpleXbmcGui;
     self.menuTree = [];
     self.menuTree.append(TreeNode("0","Startseite","http://tvthek.orf.at/",True));
-
-
-
     self.menuTree.append(TreeNode("1","Sendungen","http://tvthek.orf.at/profiles/a-z",True));
 
-    videoLinkPage = "/programs/.*"
-    imageLink = "http://tvthek.orf.at/assets/.*?.jpeg"
 
-
-    self.regex_extractVideoPageLink = re.compile(videoLinkPage+"?\"");
-    self.regex_extractImageLink = re.compile(imageLink);
-    self.regex_extractTitle = re.compile("<strong>.*<span");
-    self.regex_extractVideoLink = re.compile("/programs/.*.asx");
-    self.regex_extractVideoObject = re.compile("<a href=\""+videoLinkPage+"\" title=\".*\">\\s*<span class=\"spcr\">\\s*<img src=\""+imageLink+"\" title=\".*\" alt=\".*\" />\\s*<span class=\".*\"></span>\\s*<strong>.*<span class=\"nowrap duration\">.*</span></strong>\\s*<span class=\"desc\">.*</span>\\s*</span>\\s*</a>");
-
-    self.regex_extractSearchObject = re.compile("<li class=\"clearfix\">\\s*<a href=\".*\" title=\".*\" class=\".*\"><img src=\".*\" alt=\".*\" /><span class=\"btn_play\">.*</span></a>\\s*<p>.*</p>\\s*<h4><a href=\".*\" title=\".*\">.*</a></h4>\\s*<p><a href=\".*\" title=\".*\"></a></p>\\s*</li>");
-
-    self.regex_extractProgrammLink = re.compile("/programs/.*?\"");
-    self.regex_extractProgrammTitle = re.compile("title=\".*?\"");
-    self.regex_extractProgrammPicture = re.compile("/binaries/asset/segments/\\d*/image1");
-
-    self.regex_extractFlashVars = re.compile("ORF.flashXML = '.*?'");
-    self.regex_extractHiddenDate = re.compile("\d{4}-\d{2}-\d{2}");
-    self.regex_extractXML = re.compile("%3C.*%3E");
-
-    self.replace_html = re.compile("<.*?>");
     self.searchLink = "http://tvthek.orf.at/search?q="
 
 
@@ -71,60 +46,8 @@ class ORFMediathek(Mediathek):
   def isSearchable(self):
     return False;
 
-  def createVideoLink(self,title,image,videoPageLink,elementCount):
-    videoPage = self.loadPage(self.rootLink+videoPageLink);
-
-    videoLink = self.regex_extractVideoLink.search(videoPage);
-    if(videoLink == None):
-      return;
-
-    simpleLink = SimpleLink(self.rootLink+videoLink.group(), 0);
-    videoLink = {0:simpleLink};
-    counter = 0
-    playlist = self.loadPage(simpleLink.basePath);
-    for line in playlist:
-      counter+=1;
-
-    if(counter == 1):
-      self.gui.buildVideoLink(DisplayObject(title,"",image,"",videoLink, True, time.gmtime()),self,elementCount);
-    else:
-      self.gui.buildVideoLink(DisplayObject(title,"",image,"",videoLink, "PlayList", time.gmtime()),self,elementCount);
-
   def searchVideo(self, searchText):
-    link = self.searchLink = "http://tvthek.orf.at/search?q="+searchText;
-    mainPage = self.loadPage(link);
-    result = self.regex_extractSearchObject.findall(mainPage);
-    for searchObject in result:
-      videoLink = self.regex_extractProgrammLink.search(searchObject).group().replace("\"","");
-      title = self.regex_extractProgrammTitle.search(searchObject).group().replace("title=\"","").replace("\"","");
-      title = title.decode("UTF-8");
-      pictureLink = self.regex_extractProgrammPicture.search(searchObject).group();
-
-      print videoLink;
-
-      self.createVideoLink(title,pictureLink,videoLink, len(result));
-
-  def extractLinksFromFlashXml(self, flashXml, date, elementCount):
-    print flashXml.toprettyxml().encode('UTF-8');
-    playlistNode = flashXml.getElementsByTagName("Playlist")[0];
-    linkNode=flashXml.getElementsByTagName("AsxUrl")[0];
-    link=linkNode.firstChild.data;
-    asxLink = SimpleLink(self.rootLink+link,0);
-    videoLink = {0:asxLink};
-    for videoItem in playlistNode.getElementsByTagName("Items")[0].childNodes:
-      if(videoItem.nodeType == Node.ELEMENT_NODE):
-        titleNode=videoItem.getElementsByTagName("Title")[0];
-
-        descriptionNode=videoItem.getElementsByTagName("Description")[0];
-        title=titleNode.firstChild.data;
-
-        stringArray = link.split("mp4:");
-
-        try:
-          description=descriptionNode.firstChild.data;
-        except:
-          description="";
-        self.gui.buildVideoLink(DisplayObject(title,"","",description,videoLink, True, date),self,elementCount);
+    pass;
 
   def extractVideoLinks(self,videoPageLinks,elementCount):
     for videoPageLink in videoPageLinks:
@@ -173,10 +96,6 @@ class ORFMediathek(Mediathek):
 
     for profile in self.regex_extractProfileSites.finditer(mainPage):
       self.gui.buildVideoLink(DisplayObject(profile.group(4),None,profile.group(2),"",profile.group(1), False, None),self,0);
-      
-      
-
-
 
     videoPageLinks = self.regex_extractVideoPages.finditer(mainPage);
 
