@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re,json;
+import re,json,urllib;
 from mediathek import *
 from bs4 import BeautifulSoup;
 
@@ -29,7 +29,7 @@ class ORFMediathek(Mediathek):
     self.menuTree.append(TreeNode("1","Sendungen","http://tvthek.orf.at/profiles/a-z",True));
 
 
-    self.searchLink = "http://tvthek.orf.at/search?q="
+    self.searchLink = "http://tvthek.orf.at/search?q=%s"
 
 
 
@@ -44,10 +44,10 @@ class ORFMediathek(Mediathek):
     return "ORF";
 
   def isSearchable(self):
-    return False;
+    return True;
 
   def searchVideo(self, searchText):
-    pass;
+    self.buildPageMenu(self.searchLink%urllib.quote(searchText.encode('UTF-8')),0);
 
   def extractVideoLinks(self,videoPageLinks,elementCount):
     for videoPageLink in videoPageLinks:
@@ -85,19 +85,20 @@ class ORFMediathek(Mediathek):
           subTitle = titleArray[1];
         except IndexError:
           subTitle = "";
-        self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureLink,"",videoLinks, True, None),self,0);
+        self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureLink,"",videoLinks, True, None),self,elementCount);
       else:
-        self.gui.buildVideoLink(DisplayObject(title,None,pictureLink,"",videoLinks, True, None),self,0);
+        self.gui.buildVideoLink(DisplayObject(title,None,pictureLink,"",videoLinks, True, None),self,elementCount);
 
   def buildPageMenu(self, link, initCount):
     mainPage = self.loadPage(link);
+
     for topic in self.regex_extractTopicSites.finditer(mainPage):
       self.gui.buildVideoLink(DisplayObject(topic.group(2),None,None,"",topic.group(1), False, None),self,0);
-
+      initCount=initCount+1;
     for profile in self.regex_extractProfileSites.finditer(mainPage):
       self.gui.buildVideoLink(DisplayObject(profile.group(4),None,profile.group(2),"",profile.group(1), False, None),self,0);
+      initCount=initCount+1;
+    videoPageLinks = list(self.regex_extractVideoPages.finditer(mainPage));
 
-    videoPageLinks = self.regex_extractVideoPages.finditer(mainPage);
-
-    self.extractVideoLinks(videoPageLinks,0);
+    self.extractVideoLinks(videoPageLinks,len(videoPageLinks)+initCount);
 
