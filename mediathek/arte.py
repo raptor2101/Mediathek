@@ -138,7 +138,7 @@ class ARTEMediathek(Mediathek):
     for name,regex in self.categories.iteritems():
       match = regex.search(pageContent);
       if(match is not None):
-        content = BeautifulSoup(match.group(1));
+        content = BeautifulSoup(match.group(1),"html.parser");
         jsonContent = json.loads(content.prettify(formatter=None))
         if(isinstance(jsonContent,list)):
           self.buildJsonLink(name,jsonContent)

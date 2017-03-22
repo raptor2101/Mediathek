@@ -57,7 +57,7 @@ class ORFMediathek(Mediathek):
       if(jsonContent == None):
         return;
       jsonContent = jsonContent.group(1);
-      jsonContent = BeautifulSoup(jsonContent);
+      jsonContent = BeautifulSoup(jsonContent,"html.parser");
       jsonContent = json.loads(jsonContent.prettify(formatter=None).encode('UTF-8'));
       jsonContent = jsonContent["selected_video"];
       title = jsonContent["title"];
