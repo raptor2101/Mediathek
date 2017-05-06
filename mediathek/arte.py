@@ -46,9 +46,9 @@ class ARTEMediathek(Mediathek):
   def __init__(self, simpleXbmcGui):
     self.gui = simpleXbmcGui;
     self.rootLink = "http://www.arte.tv";
-    self.basePage = self.rootLink+"/guide/de/plus7";
+    self.basePage = self.rootLink+"/de/";
     self.jsonLink = "https://api.arte.tv/api/player/v1/config/de/%s"
-    self.serachLink = self.rootLink+"/guide/de/search?q=%s&scope=plus7&kind=plus7"
+    self.serachLink = self.rootLink+"/de/search?q=%s&scope=plus7&kind=plus7"
     self.menuTree = (
       TreeNode("0","Arte+7","mainPage",True),
       TreeNode("1","Sendungen von A-Z","showCluster",True),
@@ -57,8 +57,6 @@ class ARTEMediathek(Mediathek):
 
     self.selector_videoPages = "li.video > a";
 
-    self.regex_VideoPageLinksHTML = re.compile("href=[\"'](http:\\\\/\\\\/www\\.arte\\.tv\\\\/guide\\\\/de\\\\/\d{6}-\d{3}/.+?)[\"']");
-    self.regex_VideoPageLinksJSON = re.compile("\"url\":\"((http:\\\\/\\\\/www\\.arte\\.tv){0,1}\\\\/guide\\\\/de\\\\/\d{6}-\d{3}\\\\/.+?)\"");
     self.regex_findVideoIds = re.compile("(\d{6}-\d{3})(-A)");
     self.regex_JSONPageLink = re.compile("http://arte.tv/papi/tvguide/videos/stream/player/D/\d{6}-\d{3}.+?/ALL/ALL.json");
     self.regex_JSON_VideoLink = re.compile("\"HTTP_MP4_.+?\":{.*?\"bitrate\":(\d+),.*?\"url\":\"(http://.*?.mp4)\".*?\"versionShortLibelle\":\"([a-zA-Z]{2})\".*?}");
@@ -84,6 +82,7 @@ class ARTEMediathek(Mediathek):
         re.compile(regexSourceString%"data-categoryVideoSet"),
         re.compile(regexSourceString%"data-videoSet")
       );
+    self.regex_InitialState = re.compile("__INITIAL_STATE__ = ({.*})");
 
   def searchVideo(self, searchText):
     link = self.serachLink%searchText;
@@ -135,18 +134,31 @@ class ARTEMediathek(Mediathek):
     self.gui.log("buildPageMenu: "+self.basePage);
     pageContent = self.loadPage(self.basePage).decode('UTF-8');
 
-    for name,regex in self.categories.iteritems():
-      match = regex.search(pageContent);
-      if(match is not None):
-        content = BeautifulSoup(match.group(1),"html.parser");
-        jsonContent = json.loads(content.prettify(formatter=None))
-        if(isinstance(jsonContent,list)):
-          self.buildJsonLink(name,jsonContent)
-        elif("collection_url" in jsonContent):
-          link = jsonContent["collection_url"];
-          self.gui.buildVideoLink(DisplayObject(name,"","","",link,False,None),self,0);
+    match = self.regex_InitialState.search(pageContent)
+    if(match is not None):
+      content = BeautifulSoup(match.group(1),"html.parser");
+      jsonContent = json.loads(content.prettify(formatter=None))
+      zones = jsonContent["page"]["zones"];
+      
+      for teaser in zones[0]["teasers"]:
+        programmId= teaser["programId"];
+        if(programmId is not None and programmId.endswith("-A")):
+          link = self.jsonLink%programmId;
+          jsonPage = json.loads(self.loadPage(link));
+          self.extractVideoLinksFromJSONPage(jsonPage["videoJsonPlayer"],0);
+      
+    #for name,regex in self.categories.iteritems():
+    #  match = regex.search(pageContent);
+    #  if(match is not None):
+    #    content = BeautifulSoup(match.group(1),"html.parser");
+    #    jsonContent = json.loads(content.prettify(formatter=None))
+    #    if(isinstance(jsonContent,list)):
+    #      self.buildJsonLink(name,jsonContent)
+    #    elif("collection_url" in jsonContent):
+    #      link = jsonContent["collection_url"];
+    #      self.gui.buildVideoLink(DisplayObject(name,"","","",link,False,None),self,0);
 
-    self.extractVideoLinksFromHtml(pageContent)
+    #self.extractVideoLinksFromHtml(pageContent)
 
   def extractVideoLinksFromHtml(self, htmlPage):
     someMatch = False;
