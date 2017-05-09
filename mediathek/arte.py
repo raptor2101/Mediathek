@@ -49,7 +49,7 @@ class ARTEMediathek(Mediathek):
     self.rootLink = "http://www.arte.tv";
     self.basePage = self.rootLink+"/de/";
     self.jsonLink = "https://api.arte.tv/api/player/v1/config/de/%s"
-    self.serachLink = self.rootLink+"/de/search?q=%s&scope=plus7&kind=plus7"
+    self.serachLink = self.rootLink+"/de/search/?q=%s"
     self.menuTree = (
       TreeNode("0","Arte+7","mainPage",True),
       TreeNode("1","Sendungen von A-Z","showCluster",True),
@@ -78,14 +78,7 @@ class ARTEMediathek(Mediathek):
   def searchVideo(self, searchText):
     link = self.serachLink%searchText;
     pageContent = self.loadPage(link).decode('UTF-8');
-    content = self.searchContent.search(pageContent).group(1);
-    content = BeautifulSoup(content,"html.parser");
-    jsonContent = json.loads(content.prettify(formatter=None));
-    linkCount = len(jsonContent["programs"]);
-    for jsonObject in jsonContent["programs"]:
-      link = self.jsonLink%jsonObject["id"];
-      jsonPage = json.loads(self.loadPage(link));
-      self.extractVideoLinksFromJSONPage(jsonPage["videoJsonPlayer"],linkCount)
+    self.extractVideoLinks(pageContent,0);
 
   def buildPageMenu(self, link, initCount):
     if(link == "showCluster"):
@@ -265,10 +258,7 @@ class ARTEMediathek(Mediathek):
       jsonPage = json.loads(self.loadPage(link));
       displayObject = self.extractVideoLinksFromJSONPage(jsonPage["videoJsonPlayer"])
       if(displayObject is not None):
-        displayObjects.append(displayObject);
-
-    for displayObject in sorted(displayObjects, key=lambda displayObject:displayObject.date, reverse=True):
-       self.gui.buildVideoLink(displayObject,self,linkCount);
+        self.gui.buildVideoLink(displayObject,self,linkCount);
 
   def extractVideoLinksFromJSONPage(self, jsonPage):
     videoLinks = self.extractLinks (jsonPage);
