@@ -72,6 +72,8 @@ class ARTEMediathek(Mediathek):
     self.regex_playlists = re.compile(regexSourceString%"data-highlightedPlaylists");
 
     self.searchContent = re.compile(regexSourceString%"data-results");
+    
+    self.regex_ExtractJson = re.compile("__INITIAL_STATE__ = ({.*});");
 
   def searchVideo(self, searchText):
     link = self.serachLink%searchText;
@@ -89,31 +91,37 @@ class ARTEMediathek(Mediathek):
     if(link == "showCluster"):
       self.showCluster();
     elif (link == "mainPage"):
-      self.gui.log("buildPageMenu: "+self.basePage);
-      pageContent = self.loadPage(self.basePage).decode('UTF-8');
-      self.extractVideoLinks(pageContent,initCount);
+      self.showMainPage();
     elif (link == "showCategories"):
       self.showCategories();
     else:
       if(not link.startswith("http")):
         link = self.rootLink+link;
-      pageContent = self.loadPage(link).decode('UTF-8');
-      self.extractVideoLinks(pageContent,0);
+      self.parsePage(link);
+
+  def extractJsonFromPage(self,link):
+    pageContent = self.loadPage(link).decode('UTF-8');
+    pageContent = BeautifulSoup(self.regex_ExtractJson.search(pageContent).group(1),"html.parser");
+    return json.loads(pageContent.prettify(formatter=None))
+
+  def parsePage(self, link):
+    jsonContent = self.extractJsonFromPage(link);
+    for video in jsonContent["collection"]["videos"]:
+      self.buildVideoEntry(video);
+
+  def showMainPage(self):
+    self.gui.log("buildPageMenu: "+self.basePage);
+    jsonContent = self.extractJsonFromPage(self.basePage);
+    
+    for zone in jsonContent["page"]["zones"]:
+      if(zone["type"] in ("highlight","playlist") ):
+        for teaser in zone["teasers"]:
+          self.buildVideoEntry(teaser);
 
   def buildJsonMenu(self, path,callhash, initCount):
     jsonContent=self.gui.loadJsonFile(callhash);
-    if(path == "init"):
-      jsonObject = jsonContent;
-    else:
-      jsonObject=self.walkJson(path,jsonContent);
-    if("videos" in jsonObject):
-      self.extractVideoLinksFromJson(jsonObject);
-    if(isinstance(jsonObject,list)):
-      for jsonObject in jsonObject:
-        if("day" in jsonObject):
-          name = jsonObject["day"];
-          link = jsonObject["collection_url"];
-          self.gui.buildVideoLink(DisplayObject(name,"","","",link,False,None),self,0);
+    for teaser in jsonContent["teasers"]:
+      self.buildVideoEntry(teaser);
 
   def buildJsonLink(self,name,jsonContent):
     callhash = self.gui.storeJsonFile(jsonContent,name);
@@ -137,22 +145,17 @@ class ARTEMediathek(Mediathek):
         self.buildVideoEntry(jsonObject);
 
   def showCategories(self):
-    pageContent = self.loadPage(self.basePage).decode('UTF-8');
-    for match in self.regex_categories.finditer(pageContent):
-      title = match.group(1);
-      link = unicode(match.group(2)).decode("unicode_escape");
-      self.gui.buildVideoLink(DisplayObject(title,"","","",link,False,None),self,0);
+    jsonContent = self.extractJsonFromPage(self.basePage);
+    for zone in jsonContent["page"]["zones"]:
+      if(zone["type"] == "category" ):
+        self.buildJsonLink(zone["title"],zone);
 
   def showCluster(self):
-    pageContent = self.loadPage(self.basePage).decode('UTF-8');
-    for match in self.regex_cluster.finditer(pageContent):
-      subTitle = match.group(4);
-      title = match.group(2);
-      link = unicode(match.group(1)).decode("unicode_escape");
-      self.gui.log(title);
-      self.gui.log(subTitle);
-      self.gui.log(link);
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,"","",link,False,None),self,0);
+    jsonContent = self.extractJsonFromPage(self.basePage);
+    for zone in jsonContent["page"]["zones"]:
+      if(zone["type"] == "magazine" ):
+        for teaser in zone["teasers"]:
+          self.buildVideoEntry(teaser);
 
   def buildMenuEntry(self, menuItem):
     title = menuItem["title"];
@@ -167,15 +170,43 @@ class ARTEMediathek(Mediathek):
       subTitle = unicode(jsonObject["subtitle"]);
     else:
       subTitle = None;
-    detail = unicode(jsonObject["teaser"]);
-    picture = None;
-    for pictureItem in jsonObject["thumbnails"]:
-      if(picture is None or picture["width"]<pictureItem["width"]):
-        picture = pictureItem;
-    link=self.jsonLink%jsonObject["id"];
-    pubDate = time.strptime(jsonObject["scheduled_on"],"%Y-%m-%d");
-    duration = jsonObject["duration"]
-    self.gui.buildVideoLink(DisplayObject(title,subTitle,picture["url"],detail,link,"JsonLink", pubDate,duration),self,0);
+    if("teaser" in jsonObject):
+      detail = unicode(jsonObject["teaser"]);
+    else:
+      detail = "";
+
+    pictures = None;
+    pictureUrl = None;
+    if("thumbnails" in jsonObject):
+      pictures = jsonObject["thumbnails"];
+    if("images" in jsonObject):
+      pictures = jsonObject["images"];
+    if(pictures is not None):
+      picture = None;
+      for pictureItem in pictures:
+        if(picture is None or picture["width"]<pictureItem["width"]):
+          picture = pictureItem;
+      pictureUrl = picture["url"];
+    if(pictureUrl is None and "mainImage" in jsonObject):
+      pictureUrl = jsonObject["mainImage"]["url"];
+
+    pubDate = None;
+    if("scheduled_on" in jsonObject):
+      pubDate = time.strptime(jsonObject["scheduled_on"],"%Y-%m-%d");
+    if("publicationBegin" in jsonObject):
+      pubDate = time.strptime(jsonObject["publicationBegin"],"%Y-%m-%dT%H:%M:%SZ");
+
+    if("duration" in jsonObject):
+      duration = jsonObject["duration"];
+    if("durationSeconds" in jsonObject):
+      duration = jsonObject["durationSeconds"];
+    
+    if(jsonObject["kind"] == "SHOW"):
+      link=self.jsonLink%jsonObject["programId"];
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureUrl,detail,link,"JsonLink", pubDate,duration),self,0);
+    else:
+      link=jsonObject["url"];
+      self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureUrl,detail,link,False, pubDate,duration),self,0);
 
 
   def playVideoFromJsonLink(self,link):
