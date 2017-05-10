@@ -105,7 +105,7 @@ class ARTEMediathek(Mediathek):
   def showMainPage(self):
     self.gui.log("buildPageMenu: "+self.basePage);
     jsonContent = self.extractJsonFromPage(self.basePage);
-    
+
     for zone in jsonContent["page"]["zones"]:
       if(zone["type"] in ("highlight","playlist") ):
         for teaser in zone["teasers"]:
@@ -191,9 +191,11 @@ class ARTEMediathek(Mediathek):
 
     if("duration" in jsonObject):
       duration = jsonObject["duration"];
+      if(duration is not None):
+        duration = duration * 60;
     if("durationSeconds" in jsonObject):
       duration = jsonObject["durationSeconds"];
-    
+
     if(jsonObject["kind"] == "SHOW"):
       link=self.jsonLink%jsonObject["programId"];
       self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureUrl,detail,link,"JsonLink", pubDate,duration),self,0);
