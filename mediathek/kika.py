@@ -58,11 +58,15 @@ class KIKA(Mediathek):
       )
 
     self.regex_videoLinks=re.compile("<a href=\"(.*?/videos/video\\d+?)\\.html\"");
+    self.regex_allVideosLinks=re.compile("<a href=\"(.*?/sendungen/allevideos.*?\\.html)\"");
     self.regex_configLinks=re.compile("{dataURL:'http://www.kika.de(/.*?-avCustom.xml)'}");
+    self.selector_allVideoPage = "div.section.sectionA > div.con > span.moreBtn > a";
     self.selector_videoPages = "div.mod > div.box > div.teaser > a.linkAll";
+    self.selector_videoPages_from_allVideosPage = "a.pageItem";
     self.selector_seriesPages = "div.modCon > div.mod > div.boxCon > div.boxBroadcastSeries > div.teaser > a.linkAll";
     self.regex_xml_channel=re.compile("<channelName>(.*?)</channelName>");
     self.regex_xml_title=re.compile("<title>(.*?)</title>");
+    self.regex_xml_time=re.compile("<webTime>(.*?)</webTime>");
     self.regex_xml_image=re.compile("<teaserimage>\\s*?<url>(.*?)</url>");
     self.regex_xml_videoLink=re.compile("<asset>\\s*?<profileName>(.*?)</profileName>.*?<progressiveDownloadUrl>(.*?)</progressiveDownloadUrl>\\s*?</asset>",re.DOTALL)
     self.regex_videoLink=re.compile("rtmp://.*?\.mp4");
@@ -89,7 +93,7 @@ class KIKA(Mediathek):
     for match in self.regex_xml_videoLink.finditer(xmlPage):
       profile = match.group(1);
       directLink = match.group(2);
-      self.gui.log("%s %s"%(profile,directLink));
+      #self.gui.log("%s %s"%(profile,directLink));
       if("MP4 Web S" in profile):
         links[0] = SimpleLink(directLink, 0);
       if("MP4 Web L" in profile):
@@ -98,34 +102,69 @@ class KIKA(Mediathek):
         links[2] = SimpleLink(directLink, 0);
       if("MP4 Web XL" in profile):
         links[3] = SimpleLink(directLink, 0);
-
+    
+    date = None
+    date = time.strptime(unicode(self.regex_xml_time.search(xmlPage).group(1),"UTF-8"),u"%d.%m.%Y %H:%M");
     if(channel is not None):
-      return DisplayObject(channel,title,image,"",links,True, None);
+      return DisplayObject(channel,title,image,"",links,True, date);
     else:
-      return DisplayObject(title,"",image,"",links,True, None);
+      return DisplayObject(title,"",image,"",links,True, date);
 
   def buildPageMenu(self, link, initCount):
     pageContent = self.loadPage(link);
     htmlPage =  BeautifulSoup(pageContent, 'html.parser')
-    htmlElements = htmlPage.select(self.selector_videoPages)
+    allVideoLinks = self.regex_allVideosLinks.finditer(pageContent)
+    
     videoLinks = set()
-
-    for item in htmlElements:
-      link = self.rootLink+item['href'];
-      videoPage = self.loadPage(link);
-      for match in self.regex_videoLinks.finditer(videoPage):
-        link=match.group(1)+"-avCustom.xml";
-        if(link not in videoLinks):
-          videoLinks.add(link)
-    directLinks = list(self.regex_configLinks.finditer(pageContent));      
-    for match in directLinks:
-      link = match.group(1);
-      if(link not in videoLinks):
-        videoLinks.add(link)      
-    self.gui.log("found %d video links"%len(videoLinks))
-    count = initCount + len(videoLinks)
+    for item in allVideoLinks:
+      self.gui.log("found all videos link %s"%item.group(1))
+      link = self.rootLink+item.group(1);      
+      pageContent = self.loadPage(link);
+      htmlPage =  BeautifulSoup(pageContent, 'html.parser') 
+      self.gui.log("reload page from %s"%link) 
+      self.selector_videoPages = self.selector_videoPages_from_allVideosPage
+      self.gui.log("try to find video pages %s"%self.selector_videoPages) 
+      htmlElements = htmlPage.select(self.selector_videoPages)
+      self.gui.log("found %d video pages"%len(htmlElements))
+      count_of_element = len(htmlElements) / 2
+      for item in htmlElements:
+        if count_of_element == 0:
+         break
+        count_of_element = count_of_element - 1
+        link = self.rootLink+item['href'];      
+        videoPage = self.loadPage(link);
+        directLinks = list(self.regex_configLinks.finditer(videoPage));      
+        for match in directLinks:
+          link = match.group(1);
+          if(link not in videoLinks):
+           videoLinks.add(link)  
+           self.gui.log("found video link %s"%link)
+      self.gui.log("found %d video links"%len(videoLinks))
+      count = initCount + len(videoLinks)  
+      break;  
+    if(len(videoLinks) == 0):            
+     htmlElements = htmlPage.select(self.selector_allVideoPage) 
+     for item in htmlElements:
+       link = self.rootLink+item['href'];      
+       videoPage = self.loadPage(link);
+       for match in self.regex_videoLinks.finditer(videoPage):
+         link=match.group(1)+"-avCustom.xml";
+         if(link not in videoLinks):
+           videoLinks.add(link)
+     directLinks = list(self.regex_configLinks.finditer(pageContent));      
+     for match in directLinks:
+       link = match.group(1);
+       if(link not in videoLinks):
+         videoLinks.add(link)      
+     self.gui.log("found %d video links"%len(videoLinks))
+     count = initCount + len(videoLinks)
+    displayObects = set() 
     for link in videoLinks:
       displayObject = self.buildVideoLink(link);
+      displayObects.add(displayObject);
+    displayObects_sorted = sorted(displayObects, key=lambda displayObject: displayObject.date)
+    self.gui.log("found %d display obj "%len(displayObects))
+    for displayObject in displayObects_sorted:
       self.gui.buildVideoLink(displayObject,self, count);
     if(len(videoLinks) > 0):
       return;
@@ -133,8 +172,11 @@ class KIKA(Mediathek):
     count = count + len(htmlElements)
     self.gui.log("found %d page links"%len(htmlElements))
     for item in htmlElements:
-      self.gui.log(item.prettify());
+      #self.gui.log(item.prettify());
       link = self.rootLink+item['href'];
       title = item['title'];
       displayObject = DisplayObject(title,"",None,"",link,False, None);
+      displayObects.add(displayObject);
+    displayObects_sorted = sorted(displayObects, key=lambda displayObject: displayObject.title)
+    for displayObject in displayObects_sorted:
       self.gui.buildVideoLink(displayObject,self, count);
