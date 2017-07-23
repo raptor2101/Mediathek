@@ -59,7 +59,7 @@ class KIKA(Mediathek):
 
     self.regex_videoLinks=re.compile("<a href=\"(.*?/videos/video\\d+?)\\.html\"");
     self.regex_allVideosLinks=re.compile("<a href=\"(.*?/sendungen/allevideos.*?\\.html)\"");
-    self.regex_configLinks=re.compile("{dataURL:'http://www.kika.de(/.*?-avCustom.xml)'}");
+    self.regex_configLinks=re.compile("{dataURL:'http://www.kika.de(/.*?-avCustom.*.xml)'}");
     self.selector_allVideoPage = "div.section.sectionA > div.con > span.moreBtn > a";
     self.selector_videoPages = "div.mod > div.box > div.teaser > a.linkAll";
     self.selector_videoPages_from_allVideosPage = "a.pageItem";
