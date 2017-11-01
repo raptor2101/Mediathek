@@ -73,10 +73,12 @@ class KIKA(Mediathek):
   def name(self):
     return "KI.KA";
 
+  @classmethod
   def isSearchable(self):
     return False;
 
-  def searchVideo(self, searchText):
+  @classmethod
+  def searchVideo(self,searchText):
     return;
 
   def buildVideoLink(self,pageLink):
@@ -116,37 +118,15 @@ class KIKA(Mediathek):
 
     htmlElements = htmlPage.select(self.selector_videoPages)
     self.gui.log("found %d htmlElements"%len(htmlElements));
-    for item in htmlElements:
-      link = self.rootLink+item['href'];
-      videoPage = self.loadPage(link);
-      for match in self.regex_videoLinks.finditer(videoPage):
-        link=match.group(1)+"-avCustom.xml";
-        if(link not in videoLinks):
-          videoLinks.add(link)
-    directLinks = list(self.regex_configLinks.finditer(pageContent));
-    for match in directLinks:
-      link = match.group(1);
-      if(link not in videoLinks):
-        videoLinks.add(link)      
-    self.gui.log("found %d video links"%len(videoLinks))
-    count = initCount + len(videoLinks)
+    self.extractConfigLinks(videoLinks,pageContent);
+    self.extractVideoLinks(videoLinks,htmlElements);
 
     if(len(videoLinks) == 0):
-      htmlElements = htmlPage.select(self.selector_allVideoPage) 
-      for item in htmlElements:
-        link = self.rootLink+item['href'];
-        videoPage = self.loadPage(link);
-        for match in self.regex_videoLinks.finditer(videoPage):
-          link=match.group(1)+"-avCustom.xml";
-          if(link not in videoLinks):
-            videoLinks.add(link)
-      directLinks = list(self.regex_configLinks.finditer(pageContent));
-      for match in directLinks:
-        link = match.group(1);
-        if(link not in videoLinks):
-          videoLinks.add(link)
-      self.gui.log("found %d video links"%len(videoLinks))
-      count = initCount + len(videoLinks)
+      htmlElements = htmlPage.select(self.selector_allVideoPage)
+      self.extractVideoLinks(videoLinks,htmlElements);
+      
+    count = initCount + len(videoLinks)
+
     self.extractSubFolders(htmlPage,count);
     displayObects = set()
     for link in videoLinks:
@@ -156,6 +136,24 @@ class KIKA(Mediathek):
     self.gui.log("found %d display obj "%len(displayObects))
     for displayObject in displayObects_sorted:
       self.gui.buildVideoLink(displayObject,self, count);
+
+  def extractVideoLinks(self,videoLinks,htmlElements):
+    for item in htmlElements:
+      link = self.rootLink+item['href'];
+      videoPage = self.loadPage(link);
+      for match in self.regex_videoLinks.finditer(videoPage):
+        link=match.group(1)+"-avCustom.xml";
+        if(link not in videoLinks):
+          videoLinks.add(link)
+    self.gui.log("found %d video links"%len(videoLinks))
+
+  def extractConfigLinks(self,videoLinks,pageContent):
+    directLinks = list(self.regex_configLinks.finditer(pageContent));
+    for match in directLinks:
+      link = match.group(1);
+      if(link not in videoLinks):
+        videoLinks.add(link)
+    self.gui.log("found %d config links"%len(videoLinks))
 
   def extractSubFolders(self, htmlPage,initCount):
     htmlElements = htmlPage.select(self.selector_seriesPages) + htmlPage.select(self.selector_allVideoPage);
