@@ -60,9 +60,8 @@ class KIKA(Mediathek):
     self.regex_videoLinks=re.compile("<a href=\"(.*?/videos/video\\d+?)\\.html\"");
     self.regex_allVideosLinks=re.compile("<a href=\"(.*?/sendungen/allevideos.*?\\.html)\"");
     self.regex_configLinks=re.compile("\\{dataURL:'https{0,1}:\\/\\/www\\.kika\\.de(\\/.*?-avCustom.*\\.xml)'\\}");
-    self.selector_allVideoPage = "div.section.sectionA > div.con > span.moreBtn > a";
+    self.selector_allVideoPage = "div.mod > div.boxCon > div.box > div.teaser > a.linkAll";
     self.selector_videoPages = "div.mod > div.box > div.teaser > a.linkAll";
-    self.selector_videoPages_from_allVideosPage = "a.pageItem";
     self.selector_seriesPages = "div.modCon > div.mod > div.boxCon > div.boxBroadcastSeries > div.teaser > a.linkAll";
     self.regex_xml_channel=re.compile("<channelName>(.*?)</channelName>");
     self.regex_xml_title=re.compile("<title>(.*?)</title>");
@@ -111,54 +110,44 @@ class KIKA(Mediathek):
       return DisplayObject(title,"",image,"",links,True, date);
 
   def buildPageMenu(self, link, initCount):
+    videoLinks = set()
     pageContent = self.loadPage(link);
     htmlPage =  BeautifulSoup(pageContent, 'html.parser')
-    allVideoLinks = self.regex_allVideosLinks.finditer(pageContent)
 
-    videoLinks = set()
-    for item in allVideoLinks:
-      self.gui.log("found all videos link %s"%item.group(1))
-      link = self.rootLink+item.group(1);
-      pageContent = self.loadPage(link);
-      htmlPage =  BeautifulSoup(pageContent, 'html.parser')
-      self.gui.log("reload page from %s"%link) 
-      selector_videoPages = "div.modCon > div.mod > div.boxCon > div.box > div.teaser > a.linkAll"
-      self.gui.log("try to find video pages %s"%selector_videoPages) 
-      htmlElements = htmlPage.select(selector_videoPages)
-      self.gui.log("found %d video pages"%len(htmlElements))
-      count_of_element = len(htmlElements) / 2
-      for item in htmlElements:
-        if count_of_element == 0:
-         break
-        count_of_element = count_of_element - 1
-        link = self.rootLink+item['href'];
-        videoPage = self.loadPage(link);
-        directLinks = list(self.regex_configLinks.finditer(videoPage));
-        for match in directLinks:
-          link = match.group(1);
-          if(link not in videoLinks):
-           videoLinks.add(link)  
-           self.gui.log("found video link %s"%link)
-      self.gui.log("found %d video links"%len(videoLinks))
-      count = initCount + len(videoLinks)  
-      break;
+    htmlElements = htmlPage.select(self.selector_videoPages)
+    self.gui.log("found %d htmlElements"%len(htmlElements));
+    for item in htmlElements:
+      link = self.rootLink+item['href'];
+      videoPage = self.loadPage(link);
+      for match in self.regex_videoLinks.finditer(videoPage):
+        link=match.group(1)+"-avCustom.xml";
+        if(link not in videoLinks):
+          videoLinks.add(link)
+    directLinks = list(self.regex_configLinks.finditer(pageContent));
+    for match in directLinks:
+      link = match.group(1);
+      if(link not in videoLinks):
+        videoLinks.add(link)      
+    self.gui.log("found %d video links"%len(videoLinks))
+    count = initCount + len(videoLinks)
 
     if(len(videoLinks) == 0):
-     htmlElements = htmlPage.select(self.selector_allVideoPage) 
-     for item in htmlElements:
-       link = self.rootLink+item['href'];
-       videoPage = self.loadPage(link);
-       for match in self.regex_videoLinks.finditer(videoPage):
-         link=match.group(1)+"-avCustom.xml";
-         if(link not in videoLinks):
-           videoLinks.add(link)
-     directLinks = list(self.regex_configLinks.finditer(pageContent));
-     for match in directLinks:
-       link = match.group(1);
-       if(link not in videoLinks):
-         videoLinks.add(link)
-     self.gui.log("found %d video links"%len(videoLinks))
-     count = initCount + len(videoLinks)
+      htmlElements = htmlPage.select(self.selector_allVideoPage) 
+      for item in htmlElements:
+        link = self.rootLink+item['href'];
+        videoPage = self.loadPage(link);
+        for match in self.regex_videoLinks.finditer(videoPage):
+          link=match.group(1)+"-avCustom.xml";
+          if(link not in videoLinks):
+            videoLinks.add(link)
+      directLinks = list(self.regex_configLinks.finditer(pageContent));
+      for match in directLinks:
+        link = match.group(1);
+        if(link not in videoLinks):
+          videoLinks.add(link)
+      self.gui.log("found %d video links"%len(videoLinks))
+      count = initCount + len(videoLinks)
+    self.extractSubFolders(htmlPage,count);
     displayObects = set()
     for link in videoLinks:
       displayObject = self.buildVideoLink(link);
@@ -167,17 +156,24 @@ class KIKA(Mediathek):
     self.gui.log("found %d display obj "%len(displayObects))
     for displayObject in displayObects_sorted:
       self.gui.buildVideoLink(displayObject,self, count);
-    if(len(videoLinks) > 0):
-      return;
-    htmlElements = htmlPage.select(self.selector_seriesPages);
-    count = count + len(htmlElements)
+
+  def extractSubFolders(self, htmlPage,initCount):
+    htmlElements = htmlPage.select(self.selector_seriesPages) + htmlPage.select(self.selector_allVideoPage);
     self.gui.log("found %d page links"%len(htmlElements))
+    count = initCount + len(htmlElements)
+    displayObects = set()
     for item in htmlElements:
-      #self.gui.log(item.prettify());
       link = self.rootLink+item['href'];
       title = item['title'];
-      displayObject = DisplayObject(title,"",None,"",link,False, None);
+      #i'am uncertain why this is needed. a.linkAll should be found by selector_allVideoPage
+      if(item.has_attr('onclick')):
+        self.gui.log("onclick detected - skip link")
+        continue;
+      if(title == ""):
+        continue;
+      displayObject = DisplayObject("Alle Videos",title,"","",link,False);
       displayObects.add(displayObject);
     displayObects_sorted = sorted(displayObects, key=lambda displayObject: displayObject.title)
     for displayObject in displayObects_sorted:
       self.gui.buildVideoLink(displayObject,self, count);
+    return count;
