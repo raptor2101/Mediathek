@@ -124,7 +124,6 @@ class KIKA(Mediathek):
     if(len(videoLinks) == 0):
       htmlElements = htmlPage.select(self.selector_allVideoPage)
       self.extractVideoLinks(videoLinks,htmlElements);
-      
     count = initCount + len(videoLinks)
 
     self.extractSubFolders(htmlPage,count);
