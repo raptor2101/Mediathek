@@ -94,8 +94,10 @@ class ARTEMediathek(Mediathek):
 
   def extractJsonFromPage(self,link):
     pageContent = self.loadPage(link).decode('UTF-8');
-    pageContent = BeautifulSoup(self.regex_ExtractJson.search(pageContent).group(1),"html.parser");
-    return json.loads(pageContent.prettify(formatter=None))
+    content = self.regex_ExtractJson.search(pageContent).group(1);
+    pageContent = BeautifulSoup(content,"html.parser");
+    jsonContent= pageContent.prettify(formatter=None)
+    return json.loads(jsonContent)
 
   def parsePage(self, link):
     jsonContent = self.extractJsonFromPage(link);
@@ -105,10 +107,9 @@ class ARTEMediathek(Mediathek):
   def showMainPage(self):
     self.gui.log("buildPageMenu: "+self.basePage);
     jsonContent = self.extractJsonFromPage(self.basePage);
-
-    for zone in jsonContent["page"]["zones"]:
+    for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
       if(zone["type"] in ("highlight","playlist") ):
-        for teaser in zone["teasers"]:
+        for teaser in zone["data"]:
           self.buildVideoEntry(teaser);
 
   def buildJsonMenu(self, path,callhash, initCount):
@@ -171,7 +172,7 @@ class ARTEMediathek(Mediathek):
     if("thumbnails" in jsonObject):
       pictures = jsonObject["thumbnails"];
     if("images" in jsonObject):
-      pictures = jsonObject["images"];
+      pictures = jsonObject["images"]["square"]["resolutions"];
     if(pictures is not None):
       picture = None;
       for pictureItem in pictures:
