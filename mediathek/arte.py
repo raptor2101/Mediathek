@@ -118,7 +118,7 @@ class ARTEMediathek(Mediathek):
 
   def buildJsonMenu(self, path,callhash, initCount):
     jsonContent=self.gui.loadJsonFile(callhash);
-    for teaser in jsonContent["teasers"]:
+    for teaser in jsonContent["data"]:
       self.buildVideoEntry(teaser);
 
   def buildJsonLink(self,name,jsonContent):
@@ -143,15 +143,15 @@ class ARTEMediathek(Mediathek):
 
   def showCategories(self):
     jsonContent = self.extractJsonFromPage(self.basePage);
-    for zone in jsonContent["page"]["zones"]:
+    for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
       if(zone["type"] == "category" ):
         self.buildJsonLink(zone["title"],zone);
 
   def showCluster(self):
     jsonContent = self.extractJsonFromPage(self.basePage);
-    for zone in jsonContent["page"]["zones"]:
+    for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
       if(zone["type"] == "magazine" ):
-        for teaser in zone["teasers"]:
+        for teaser in zone["data"]:
           self.buildVideoEntry(teaser);
 
   def buildMenuEntry(self, menuItem):
@@ -196,18 +196,24 @@ class ARTEMediathek(Mediathek):
       pubDate = time.strptime(jsonObject["scheduled_on"],"%Y-%m-%d");
     if("publicationBegin" in jsonObject):
       pubDate = time.strptime(jsonObject["publicationBegin"],"%Y-%m-%dT%H:%M:%SZ");
+    if("availability" in jsonObject and jsonObject["availability"] is not None and jsonObject["availability"]["start"] is not None):
+      pubDate = time.strptime(jsonObject["availability"]["start"],"%Y-%m-%dT%H:%M:%SZ");
 
-    duration = 0;
-    if("duration" in jsonObject):
-      duration = jsonObject["duration"];
-      if(duration is not None):
-        duration = duration * 60;
-    if("durationSeconds" in jsonObject):
-      duration = jsonObject["durationSeconds"];
+    duration = None;
+    if("duration" in jsonObject and jsonObject["duration"] is not None):
+      duration = int(jsonObject["duration"]);
+    if("durationSeconds" in jsonObject and jsonObject["durationSeconds"] is not None):
+      duration = int(jsonObject["durationSeconds"]);
+    if(duration is None):
+      duration = 0;
 
     kind = jsonObject["kind"];
-    if(kind is not None and kind["code"] == "SHOW"):
+    if(kind is not None and kind["code"] in ("SHOW","MANUAL_CLIP")):
+      self.gui.log(title);
+      self.gui.log("%d"%duration);
+      self.gui.log(pubDate);
       link=self.jsonLink%jsonObject["programId"];
+
       self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureUrl,detail,link,"JsonLink", pubDate,duration),self,0);
     else:
       link=jsonObject["url"];
