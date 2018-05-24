@@ -101,8 +101,12 @@ class ARTEMediathek(Mediathek):
 
   def parsePage(self, link):
     jsonContent = self.extractJsonFromPage(link);
-    for video in jsonContent["collection"]["videos"]:
-      self.buildVideoEntry(video);
+    page = jsonContent["pages"];
+    currentCode = page ["currentCode"];
+    for zone in page["list"][currentCode]["zones"]:
+      if(zone["type"] in ("listing") ):
+        for teaser in zone["data"]:
+          self.buildVideoEntry(teaser);
 
   def showMainPage(self):
     self.gui.log("buildPageMenu: "+self.basePage);
@@ -172,7 +176,12 @@ class ARTEMediathek(Mediathek):
     if("thumbnails" in jsonObject):
       pictures = jsonObject["thumbnails"];
     if("images" in jsonObject):
-      pictures = jsonObject["images"]["square"]["resolutions"];
+      square = jsonObject["images"]["square"];
+      landscape = jsonObject["images"]["landscape"];
+      if(square is not None):
+        pictures = square["resolutions"];
+      else:
+        pictures = landscape["resolutions"];
     if(pictures is not None):
       picture = None;
       for pictureItem in pictures:
@@ -188,6 +197,7 @@ class ARTEMediathek(Mediathek):
     if("publicationBegin" in jsonObject):
       pubDate = time.strptime(jsonObject["publicationBegin"],"%Y-%m-%dT%H:%M:%SZ");
 
+    duration = 0;
     if("duration" in jsonObject):
       duration = jsonObject["duration"];
       if(duration is not None):
@@ -195,7 +205,8 @@ class ARTEMediathek(Mediathek):
     if("durationSeconds" in jsonObject):
       duration = jsonObject["durationSeconds"];
 
-    if(jsonObject["kind"] == "SHOW"):
+    kind = jsonObject["kind"];
+    if(kind is not None and kind["code"] == "SHOW"):
       link=self.jsonLink%jsonObject["programId"];
       self.gui.buildVideoLink(DisplayObject(title,subTitle,pictureUrl,detail,link,"JsonLink", pubDate,duration),self,0);
     else:
