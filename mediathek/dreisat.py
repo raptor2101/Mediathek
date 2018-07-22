@@ -20,7 +20,7 @@ from mediathek import *
 from xml.dom import minidom;
 
 
-regex_dateString = re.compile("\\d{2} ((\\w{3})|(\\d{2})) \\d{4}");
+regex_dateString = re.compile("\\d{2}\\.((\\w{3})|(\\d{2}))\\.\\d{4}");
 month_replacements = {
     "Jan":"01",
     "Feb":"02",
@@ -55,26 +55,67 @@ class DreiSatMediathek(Mediathek):
     self.webEmType = "video/webm";
     self.menuTree = (
       TreeNode("0","Hauptseite","http://www.3sat.de/mediathek/",True),
-      TreeNode("1","Hauptseite","http://www.3sat.de/mediathek/",True),
-      TreeNode("2","Hauptseite","http://www.3sat.de/mediathek/",True)
+      TreeNode("1","Sendungen von A-Z","",False,(
+        TreeNode("1.0","Kulturzeit","http://www.3sat.de/mediathek/?red=kulturzeit",True),
+        TreeNode("1.1","Nano","http://www.3sat.de/mediathek/?red=nano",True),
+        TreeNode("1.2","marko","http://www.3sat.de/mediathek/?red=makro",True),
+        TreeNode("1.3","scobel","http://www.3sat.de/mediathek/?red=scobel",True),
+        TreeNode("1.4","Wissenschaftsdoku","http://www.3sat.de/mediathek/?red=wido",True),
+        TreeNode("1.5","3satbuchzeit","http://www.3sat.de/mediathek/?red=buchzeit",True),
+        TreeNode("1.6","Ab 18!","http://www.3sat.de/mediathek/?red=ab18",True),
+        TreeNode("1.7","auslandsjournal extra","http://www.3sat.de/mediathek/?red=ajextra",True),
+        TreeNode("1.8","Bauerfeind","http://www.3sat.de/mediathek/?red=bauerfeind",True),
+        TreeNode("1.9","Besonders normal","http://www.3sat.de/mediathek/?red=besondersnormal",True),
+        TreeNode("1.10","Close up","http://www.3sat.de/mediathek/?red=closeup",True),
+        TreeNode("1.11","Film","http://www.3sat.de/mediathek/?red=film",True),
+        TreeNode("1.12","hitec","http://www.3sat.de/mediathek/?red=hitec",True),
+        TreeNode("1.13","Kabarett / Comedy","http://www.3sat.de/mediathek/?red=kabarett",True),
+        TreeNode("1.14","Kennwort Kino","http://www.3sat.de/mediathek/?red=kennwortkino",True),
+        TreeNode("1.15","Kulturpalast","http://www.3sat.de/mediathek/?red=kulturpalast",True),
+        TreeNode("1.16","Museumscheck","http://www.3sat.de/mediathek/?red=museumscheck",True),
+        TreeNode("1.17","Musik","http://www.3sat.de/mediathek/?red=musik",True),
+        TreeNode("1.18",u"Peter Voß fragt","http://www.3sat.de/mediathek/?red=begegnungen",True),
+        TreeNode("1.19","Philosophie","http://www.3sat.de/mediathek/?red=philosophie",True),
+        TreeNode("1.20","Pixelmacher","http://www.3sat.de/mediathek/?red=pxl",True),
+        TreeNode("1.21","SCHWEIZWEIT","http://www.3sat.de/mediathek/?red=schweizweit",True)
+        )),
       );
 
     self.rootLink = "http://www.3sat.de"
-    self.searchLink = 'http://www.3sat.de/mediathek/mediathek';
+    self.searchLink = 'http://www.3sat.de/mediathek/?mode=suche&query=%s';
 
+    self.history_counter = re.compile("verpasst(\\d+)");
+    self.regex_nextLink = re.compile("(\\/\\/www.3sat.de\\/mediathek\\/\\?mode=verpasst(\\d+)&amp;red=.*?)\"");
     self.regex_objectLink = re.compile("obj=(\\d+)");
-
+    self.regex_dimensions = re.compile("(\\d)+x(\\d+)");
     self.xmlService_Link = "http://www.3sat.de/mediathek/xmlservice.php/v3/web/beitragsDetails?id=%s"
     self.jsonService_Link = "http://tmd.3sat.de/tmd/2/ngplayer_2_3/vod/ptmd/3sat/%s"
 
   def buildPageMenu(self, link, initCount):
     self.gui.log("buildPageMenu: "+link);
-
+    match = self.history_counter.search(link);
+    if(match is not None):
+      history_counter = int(match.group(1));
+    else:
+      history_counter = 0;
     mainPage = self.loadPage(link);
     matches = list(self.regex_objectLink.finditer(mainPage));
     counter = len(matches)+initCount
+
+    objectIds = [];
     for match in matches:
-      self.buildVideoLink(match.group(1), counter);
+      objectId = match.group(1);
+      if(objectId not in objectIds):
+        objectIds.append(objectId);
+
+    for objectId in objectIds:
+      self.buildVideoLink(objectId, counter);
+
+    for match in self.regex_nextLink.finditer(mainPage):
+      if(int(match.group(2)) == history_counter + 1):
+        link = "http:"+match.group(1);
+        self.gui.buildVideoLink(DisplayObject("Weiter",match.group(2),"","",link,False,None,None),self,counter);
+        break;
 
   def buildVideoLink(self, objectId, counter):
     xmlPage = self.loadPage(self.xmlService_Link%objectId);
@@ -82,10 +123,21 @@ class DreiSatMediathek(Mediathek):
     videoNode = xmlPage.getElementsByTagName("video")[0];
     informationNode = xmlPage.getElementsByTagName("information")[0];
     detailsNode = xmlPage.getElementsByTagName("details")[0];
-    title = self.readText(informationNode,"title");
+    title = unicode(self.readText(informationNode,"title"));
+    description = unicode(self.readText(informationNode,"detail"));
     basename = self.readText(detailsNode,"basename");
+    length = self.readText(detailsNode,"lengthSec");
+    date = self.parseDate(self.readText(detailsNode,"airtime"));
+    maxSize = 0;
+    for imageNode in xmlPage.getElementsByTagName("teaserimages")[0].getElementsByTagName("teaserimage"):
+      match = self.regex_dimensions.search(imageNode.getAttribute("key"));
+      size = int(match.group(1))*int(match.group(2));
+      if(size>maxSize):
+        maxSize = size;
+        imageLink = "http:"+imageNode.firstChild.data;
 
-    self.gui.buildVideoLink(DisplayObject(title,"","","",self.jsonService_Link%basename,"JsonLink",None,None),self,counter);
+
+    self.gui.buildVideoLink(DisplayObject(title,"",imageLink,description,self.jsonService_Link%basename,"JsonLink",date,length),self,counter);
 
   def playVideoFromJsonLink(self,link):
     page = self.loadPage(link);
@@ -120,36 +172,8 @@ class DreiSatMediathek(Mediathek):
     return links;
 
   def searchVideo(self, searchText):
-    values ={'mode':'search',
-             'query':searchText,
-             'red': '',
-             'query_time': '',
-             'query_sort': '',
-             'query_order':''
-             }
-    mainPage = self.loadPage(self.searchLink,values);
-    results = self.regex_searchResult.findall(mainPage);
-    for result in results:
-      objectLink = self.regex_searchResultLink.search(result).group();
-      infoLink = self.rootLink+objectLink
-      infoPage = self.loadPage(infoLink);
-      title = self.regex_searchTitle.search(infoPage).group();
-      detail = self.regex_searchDetail.search(infoPage).group();
-      image = self.regex_searchImage.search(infoPage).group();
-      title = self.replace_html.sub("", title);
-      detail = self.replace_html.sub("", detail);
-      try:
-        dateString = self.regex_searchDate.search(infoPage).group();
-        pubDate = time.strptime(dateString,"%d.%m.%Y");
-      except:
-        pubDate = time.gmtime();
-      videoLink = self.rootLink+objectLink+"&mode=play";
-      videoPage = self.loadPage(videoLink);
-      video = self.regex_searchLink.search(videoPage).group();
-      video = video.replace("fstreaming","wstreaming").replace(".smil",".asx");
-      links = {}
-      links[2] = SimpleLink(video,0)
-      self.gui.buildVideoLink(DisplayObject(title,"",self.rootLink + image,detail,links,True, pubDate),self,len(results));
+    self.buildPageMenu(self.searchLink%searchText,0);
+
   def readText(self,node,textNode):
     try:
       node = node.getElementsByTagName(textNode)[0].firstChild;
@@ -173,7 +197,7 @@ class DreiSatMediathek(Mediathek):
     dateString = regex_dateString.search(dateString).group();
     for month in month_replacements.keys():
       dateString = dateString.replace(month,month_replacements[month]);
-    return time.strptime(dateString,"%d %m %Y");
+    return time.strptime(dateString,"%d.%m.%Y");
 
   def extractVideoInformation(self, itemNode, nodeCount):
     title = self.readText(itemNode,"title");
