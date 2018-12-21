@@ -193,8 +193,7 @@ class NDRMediathek(Mediathek):
         nodeCount = initCount + len(videoItems)
 
         for videoItem in videoItems:
-            print "link: {0}".format(link)
-            print "videoItem: {0}".format(videoItem[0])
+            self.gui.log("link: {0}".format(link));
             if "<div class=\"subline\">" not in videoItem[0]:
                 continue
             videoLink = regex_extractVideoItemHref.search(videoItem[0]).group(1)
@@ -219,7 +218,6 @@ class NDRMediathek(Mediathek):
 
     def buildPageMenu(self, link, initCount):
 
-        print link
         if link[0:15] == "sendungverpasst":
             self.buildPageMenuSendungVerpasst(link[15:])
         elif link == "livestream":
@@ -245,13 +243,16 @@ class NDRMediathek(Mediathek):
             "(.*?)"
             "</p>", re.DOTALL
         )
-        if not videoLink.startswith(self.rootLink):
+        if not videoLink.startswith(self.rootLink) and not videoLink.startswith("http"):
             videoLink = self.rootLink+videoLink
         videoPage = self.loadPage(videoLink)
 
         self.gui.log("videolink: {0}".format(videoLink))
         videoLink = {}
-        videoLink[0] = SimpleLink(regexFindVideoLink.search(videoPage).group(0), 0)
+        match = regexFindVideoLink.search(videoPage);
+        if(match is None):
+          return;
+        videoLink[0] = SimpleLink(match.group(0), 0)
 
         try:
             pictureLink = self.rootLink+regexFindImageLink.search(videoPage).group(0)
