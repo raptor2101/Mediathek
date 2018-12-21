@@ -236,7 +236,7 @@ class ARTEMediathek(Mediathek):
       return links;
 
     for videoObject in jsonObject["VSR"].itervalues():
-      if( videoObject["versionShortLibelle"] != "DE"):
+      if( videoObject["versionShortLibelle"] != "DE" and videoObject["versionShortLibelle"] != "OmU"):
         continue;
       if videoObject["mediaType"] == "mp4":
         url = videoObject["url"];
