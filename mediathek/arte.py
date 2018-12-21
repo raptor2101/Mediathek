@@ -235,7 +235,7 @@ class ARTEMediathek(Mediathek):
     if(not isinstance(vsrObjects,dict)):
       return links;
 
-    for videoObject in jsonObject["VSR"].values():
+    for videoObject in list(jsonObject["VSR"].values()):
       if( videoObject["versionShortLibelle"] != "DE" and videoObject["versionShortLibelle"] != "OmU"):
         continue;
       if videoObject["mediaType"] == "mp4":
