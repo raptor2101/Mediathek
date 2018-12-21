@@ -96,23 +96,29 @@ class ARTEMediathek(Mediathek):
     pageContent = self.loadPage(link).decode('UTF-8');
     content = self.regex_ExtractJson.search(pageContent).group(1);
     pageContent = BeautifulSoup(content,"html.parser");
-    jsonContent= pageContent.prettify(formatter=None)
-    return json.loads(jsonContent)
+    jsonContent= pageContent.prettify(formatter=None);
+    return json.loads(jsonContent);
 
   def parsePage(self, link):
     jsonContent = self.extractJsonFromPage(link);
     page = jsonContent["pages"];
     currentCode = page ["currentCode"];
     for zone in page["list"][currentCode]["zones"]:
-      if(zone["type"] in ("listing") ):
+      # GN: changed to new content
+      #if(zone["type"] in ("listing") ):
+      if("videos" in zone["code"]["name"] ):
         for teaser in zone["data"]:
           self.buildVideoEntry(teaser);
 
   def showMainPage(self):
     self.gui.log("buildPageMenu: "+self.basePage);
     jsonContent = self.extractJsonFromPage(self.basePage);
-    for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
-      if(zone["type"] in ("highlight","playlist") ):
+    zones = jsonContent["pages"]["list"]["HOME_de_{}"]["zones"];
+    for zone in zones:
+      # GN: changed to new content
+      #if(zone["type"] in ("highlight","playlist") ):
+      if ("highlights" in zone["code"]["name"] or
+          "playlists"  in zone["code"]["name"]):
         for teaser in zone["data"]:
           self.buildVideoEntry(teaser);
 
@@ -123,7 +129,7 @@ class ARTEMediathek(Mediathek):
 
   def buildJsonLink(self,name,jsonContent):
     callhash = self.gui.storeJsonFile(jsonContent,name);
-    self.gui.buildJsonLink(self,name,"init",callhash,0)
+    self.gui.buildJsonLink(self,name,"init",callhash,0);
 
   def extractVideoLinksFromHtml(self, htmlPage):
     someMatch = False;
@@ -132,8 +138,8 @@ class ARTEMediathek(Mediathek):
       if(match is not None):
         someMatch = True;
         content = BeautifulSoup(match.group(1),"html.parser");
-        jsonContent = json.loads(content.prettify(formatter=None))
-        self.extractVideoLinksFromJson(jsonContent)
+        jsonContent = json.loads(content.prettify(formatter=None));
+        self.extractVideoLinksFromJson(jsonContent);
     return someMatch;
 
 
@@ -144,13 +150,14 @@ class ARTEMediathek(Mediathek):
   def showCategories(self):
     jsonContent = self.extractJsonFromPage(self.basePage);
     for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
-      if(zone["type"] == "category" ):
+      if zone["link"]:
         self.buildJsonLink(zone["title"],zone);
 
   def showCluster(self):
     jsonContent = self.extractJsonFromPage(self.basePage);
     for zone in jsonContent["pages"]["list"]["HOME_de_{}"]["zones"]:
-      if(zone["type"] == "magazine" ):
+      # GN: changed to new content
+      if("magazine" in zone["code"]["name"]):
         for teaser in zone["data"]:
           self.buildVideoEntry(teaser);
 
