@@ -15,7 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re, time, datetime;
+import re, time, datetime, json;
+from bs4 import BeautifulSoup;
 from mediathek import *
 
 class ARDMediathek(Mediathek):
@@ -84,87 +85,73 @@ class ARDMediathek(Mediathek):
 
 
     self.replace_html = re.compile("<.*?>");
+    
+    self.playerLink = self.rootLink+"/ard/player/%s"
+    self.regex_ExtractJson = re.compile("__APOLLO_STATE__ = ({.*});");
+    self.tumbnail_size = "600";
 
   @classmethod
   def name(self):
     return "ARD";
   def isSearchable(self):
     return False;
+  def extractJsonFromPage(self,link):
+    pageContent = self.loadPage(link).decode('UTF-8');
+    content = self.regex_ExtractJson.search(pageContent).group(1);
+    pageContent = BeautifulSoup(content,"html.parser");
+    jsonContent= pageContent.prettify(formatter=None);
+    return json.loads(jsonContent);
 
   def buildPageMenu(self, link, initCount, subLink = False):
-    self.gui.log("Build Page Menu: %s SubLink: %d"%(link,subLink));    
-    mainPage = self.loadPage(link);
+    self.gui.log("Build Page Menu: %s SubLink: %d"%(link,subLink));
+    jsonContent = self.extractJsonFromPage(link);
+    for key in jsonContent:
+      if(key.startswith("Teaser:")):
+        self.doSomeShit(jsonContent[key],jsonContent);
+    return 0;
 
-    elementCount = 0;
+  def doSomeShit(self, teaserContent, jsonContent):
+    title = teaserContent["shortTitle"];
+    subTitle = None;
+    picture = self.getPictureLink(teaserContent["images"],jsonContent);
+    videoLinks = self.getVideoLinks(teaserContent["links"],jsonContent);
+    date = None;
+    duration = None;
+    nodeCount = 0;
+    self.gui.buildVideoLink(DisplayObject(title, subTitle,picture,"",videoLinks,"JsonLink",date,duration),self,nodeCount);
 
-    elementCount = self.extractElements(mainPage);
+  def getVideoLinks(self, linkSource, jsonContent):
+    #WTF geht es noch sinnloser?
+    key = linkSource["id"]
+    key = jsonContent[key]["target"]["id"];
+    return self.playerLink%jsonContent[key]["id"];
 
+  def getPictureLink(self, pictureSource, jsonContent):
+    if(pictureSource is not None):
+      key=pictureSource["id"];
+      pictureConfig = jsonContent[key];
+      for key in pictureConfig:
+        if(key.startswith("aspect") and pictureConfig[key] is not None):
+          key = pictureConfig[key]["id"];
+          return jsonContent[key]["src"].replace("{width}",self.tumbnail_size);
+    return None;
 
-    self.generateNextPageElement(link, elementCount);
-    return elementCount;
-  def generateNextPageElement(self, link, elementCount):
-    marker = "";
-    if("Sendung?documentId" in link):
-      marker = "s";
+  def playVideoFromJsonLink(self,link):
+    #WTF OHHHHHHHHH JAAAAAA - es geht noch sinnloser...
+    jsonContent = self.extractJsonFromPage(link);
 
-    numberElement = self.regex_DetermineSelectedPage.search(link);  
-    if(numberElement is not None):
-      oldNumber = int(numberElement.group(1));
-      newNumber = oldNumber + 1;
-      link = link.replace(self.pageSelectString%(marker,oldNumber),self.pageSelectString%(marker,newNumber));
-
-      self.gui.buildVideoLink(DisplayObject("Weiter","","","",link,False),self,elementCount);
-    else:
-      link += self.pageSelectString%(marker,2)
-
-      self.gui.buildVideoLink(DisplayObject("Weiter","","","",link,False),self,elementCount);
-
-  def extractElements(self,mainPage):
-    videoElements = list(self.regex_VideoPageLink.finditer(mainPage));
-    if len(videoElements) == 0:
-      linkElements = list(self.regex_CategoryPageLink.finditer(mainPage));
-    else:
-      linkElements = []
-
-    counter = len(videoElements) + len(linkElements);
-    for element in linkElements:
-      link = self.rootLink+element.group(1);
-      title = element.group(2).decode('utf-8');
-      # subTitle = element.group(3).decode('utf-8');
-      subTitle = ""
-      self.gui.buildVideoLink(DisplayObject(title,subTitle,"","",link,False),self,counter);
-    for element in videoElements:
-      videoId = element.group(1);
-      title = element.group(2).decode('utf-8').replace("<br/>","");
-      subTitle = element.group(3).decode('utf-8');
-      if element.group(4):
-        datestring = element.group(4).decode('utf-8');
-        date = datetime.date(*[int(x) for x in datestring.split('.')[::-1]]).timetuple()
-      else:
-        date = None
-      durationstring = element.group(5).decode('utf-8');
-      duration = int(durationstring) * 60;
-      self.decodeVideoInformation(videoId, title, subTitle, counter, date, duration);
-    return counter;
-
-  def decodeVideoInformation(self, videoId, title, subTitle, nodeCount, date, duration):
-    link = self.configLink%videoId;
-    self.gui.log("VideoLink: "+link);
-    videoPage = self.loadPage(link);
     videoLinks = {}
-    for match in self.regex_videoLinks.finditer(videoPage):
-      quality = int(match.group(1));
-      link = match.group(2);
-      if(link.startswith("//")):
-        link = "http:"+link;
-      link = SimpleLink(link,0);
+    for key in jsonContent:
+      if("_mediaStreamArray." in key):
+        streamConfig = jsonContent[key];
+        if(streamConfig["_quality"] == "auto"):
+          quality = 3;
+        else:
+          quality = int(streamConfig["_quality"]);
+        link = streamConfig["_stream"]["json"][0];
+        if(not link.startswith("http")):
+          link = "https:"+link;
+        self.gui.log("VideoLink: "+link);
+        videoLinks[quality] = SimpleLink(link,-1);
 
-      if(quality > 0):
-       quality -= 1
-      videoLinks[quality] = link
-    match = self.regex_pictureLink.search(videoPage)  
-    picture = None
-    if(match is not None):
-      picture = match.group(1);
-    if(len(videoLinks)>0):
-      self.gui.buildVideoLink(DisplayObject(title, subTitle,picture,"",videoLinks,True,date,duration),self,nodeCount);
+    self.gui.play(videoLinks);
