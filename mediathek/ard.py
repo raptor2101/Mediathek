@@ -207,5 +207,5 @@ class ARDMediathek(Mediathek):
           link = "https:"+link;
         self.gui.log("VideoLink: "+link);
         videoLinks[quality] = SimpleLink(link,-1);
-
-    self.gui.play(videoLinks);
+    if(len(videoLinks) > 0):
+      self.gui.play(videoLinks);
