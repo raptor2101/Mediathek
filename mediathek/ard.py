@@ -15,7 +15,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re, time, datetime, json, urllib;
+import re, time, datetime, json, urllib, base64;
 from bs4 import BeautifulSoup;
 from mediathek import *
 
@@ -159,14 +159,14 @@ class ARDMediathek(Mediathek):
       date = time.strptime(teaserContent["broadcastedOn"],"%Y-%m-%dT%H:%M:%SZ");
     else:
       date = None;
-    videoLink = self.playerLink%teaserContent["links"]["target"]["id"];
+    videoLink = base64.b64encode(self.playerLink%teaserContent["links"]["target"]["id"]);
     self.gui.buildVideoLink(DisplayObject(title, subTitle, picture, "", videoLink, "JsonLink", date, duration),self,0);
 
   def GenerateVideoLink(self, teaserContent, jsonContent):
     title = teaserContent["shortTitle"];
     subTitle = None;
     picture = self.getPictureLink(teaserContent["images"],jsonContent);
-    videoLinks = self.getVideoLinks(teaserContent["links"],jsonContent);
+    videoLinks = base64.b64encode(self.getVideoLinks(teaserContent["links"],jsonContent));
     if(teaserContent["broadcastedOn"] is not None):
       date = time.strptime(teaserContent["broadcastedOn"],"%Y-%m-%dT%H:%M:%SZ");
     else:
@@ -191,7 +191,9 @@ class ARDMediathek(Mediathek):
     return None;
 
   def playVideoFromJsonLink(self,link):
+    link = base64.b64decode(link);
     #WTF OHHHHHHHHH JAAAAAA - es geht noch sinnloser...
+    self.gui.log("Play from JSON Link %s"%link);
     jsonContent = self.extractJsonFromPage(link);
 
     videoLinks = {}
@@ -209,3 +211,5 @@ class ARDMediathek(Mediathek):
         videoLinks[quality] = SimpleLink(link,-1);
     if(len(videoLinks) > 0):
       self.gui.play(videoLinks);
+    else:
+      self.gui.log("Nothing playable found");
