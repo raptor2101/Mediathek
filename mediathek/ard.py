@@ -67,6 +67,7 @@ class ARDMediathek(Mediathek):
     return "ARD";
   def isSearchable(self):
     return False;
+  
   def extractJsonFromPage(self,link):
     pageContent = self.loadPage(link).decode('UTF-8');
     content = self.regex_ExtractJson.search(pageContent).group(1);
@@ -83,7 +84,6 @@ class ARDMediathek(Mediathek):
     for key in jsonContent:
       if(key.startswith("Widget:")):
         self.GenerateCaterogyLink(jsonContent[key], callHash, jsonContent, client);
-    return 0;
 
   def GenerateCaterogyLink(self, widgetContent, callHash, jsonContent,client):
     widgetId = widgetContent["id"];
@@ -92,8 +92,9 @@ class ARDMediathek(Mediathek):
     if(widgetContent["titleVisible"] == True):
       self.gui.buildJsonLink(self, title, "%s.%s"%(client,widgetId), callHash,0);
     else:
-      widgetContent = jsonContent[listingKey];
-      self.GenerateCaterogyLinks(widgetContent, jsonContent)
+      if(listingKey in jsonContent):
+        widgetContent = jsonContent[listingKey];
+        self.GenerateCaterogyLinks(widgetContent, jsonContent)
 
   def buildcategoryListingKey(self,client,widgetId,jsonContent):
     #ich werd zum elch... erst noch die "dynamische" Pagesize/Number nachschlagen ...
