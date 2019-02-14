@@ -24,7 +24,7 @@ class ARDMediathek(Mediathek):
     self.gui = simpleXbmcGui;
     self.rootLink = "https://www.ardmediathek.de"
     self.menuTree = (
-                      TreeNode("0" ,"ARD"          ,self.rootLink+"/ard/",True),
+                      TreeNode("0" ,"Alle"         ,self.rootLink+"/ard/",True),
                       TreeNode("1" ,"Das Erste"    ,self.rootLink+"/daserste/",True),
                       TreeNode("2" ,"BR"           ,self.rootLink+"/br/",True),
                       TreeNode("3" ,"HR"           ,self.rootLink+"/hr/",True),
@@ -67,13 +67,11 @@ class ARDMediathek(Mediathek):
     return "ARD";
   def isSearchable(self):
     return False;
-  
+
   def extractJsonFromPage(self,link):
     pageContent = self.loadPage(link).decode('UTF-8');
     content = self.regex_ExtractJson.search(pageContent).group(1);
-    pageContent = BeautifulSoup(content,"html.parser");
-    jsonContent= pageContent.prettify(formatter=None);
-    return json.loads(jsonContent);
+    return json.loads(content);
 
   def buildPageMenu(self, link, initCount):
     self.gui.log("Build Page Menu: %s"%(link));
