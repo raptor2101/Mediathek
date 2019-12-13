@@ -49,7 +49,8 @@ class ARDMediathek(Mediathek):
 
 
     self.regex_Date = re.compile("\\d{2}\\.\\d{2}\\.\\d{2}");
-
+    self.__date_format_broadcasted_on = "%Y-%m-%dT%H:%M:%S.%fZ"
+    self.__date_format_broadcasted_on_old = "%Y-%m-%dT%H:%M:%SZ"
 
     self.replace_html = re.compile("<.*?>");
     self.regex_DetermineClient = re.compile(self.rootLink+"/(.*)/");
@@ -61,6 +62,22 @@ class ARDMediathek(Mediathek):
     self.variables = "{\"widgetId\":\"%s\",\"client\":\"%s\",\"pageNumber\":%d,\"pageSize\":%d}"
     self.extension = "{\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"915283a7f9b1fb8a5b2628aaa45aef8831f789a8ffdb31aa81fcae53945ee712\"}}";
     self.publicGateway = "https://api.ardmediathek.de/public-gateway?variables=%s&extensions=%s";
+
+  def __getBroadcastedOnDate(self, teaserContent):
+        """parse time in broadcastedOn property"""
+        if teaserContent["broadcastedOn"] is not None:
+            broadcasted_on = teaserContent["broadcastedOn"]
+            try:
+                date = time.strptime(broadcasted_on, self.__date_format_broadcasted_on)
+            except ValueError:
+                try:
+                    # retry with old format
+                    date = time.strptime(broadcasted_on, self.__date_format_broadcasted_on_old)
+                except ValueError:
+                    date = None
+        else:
+            date = None
+        return date
 
   @classmethod
   def name(self):
@@ -154,10 +171,7 @@ class ARDMediathek(Mediathek):
         picture = imageObject["src"].replace("{width}",self.tumbnail_size);
 
     duration = teaserContent["duration"];
-    if(teaserContent["broadcastedOn"] is not None):
-      date = time.strptime(teaserContent["broadcastedOn"],"%Y-%m-%dT%H:%M:%SZ");
-    else:
-      date = None;
+    date = self.__getBroadcastedOnDate(teaserContent)
     videoLink = base64.b64encode(self.playerLink%teaserContent["links"]["target"]["id"]);
     self.gui.buildVideoLink(DisplayObject(title, subTitle, picture, "", videoLink, "JsonLink", date, duration),self,0);
 
@@ -166,10 +180,7 @@ class ARDMediathek(Mediathek):
     subTitle = None;
     picture = self.getPictureLink(teaserContent["images"],jsonContent);
     videoLinks = base64.b64encode(self.getVideoLinks(teaserContent["links"],jsonContent));
-    if(teaserContent["broadcastedOn"] is not None):
-      date = time.strptime(teaserContent["broadcastedOn"],"%Y-%m-%dT%H:%M:%SZ");
-    else:
-      date = None;
+    date = self.__getBroadcastedOnDate(teaserContent)
     duration = teaserContent["duration"];
     self.gui.buildVideoLink(DisplayObject(title, subTitle, picture,"",videoLinks,"JsonLink",date,duration),self,0);
 
