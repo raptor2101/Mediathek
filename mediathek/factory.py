@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#-------------LicenseHeader--------------
+# -------------LicenseHeader--------------
 # plugin.video.Mediathek - Gives access to most video-platforms from German public service broadcasters
 # Copyright (C) 2010  Raptor 2101 [raptor2101@gmx.de]
 #
@@ -21,19 +21,21 @@ from mediathek.arte import *
 from mediathek.dreisat import *
 from mediathek.kika import *
 
-class MediathekFactory(object):
-  def __init__(self):
-    self.avaibleMediathekes = {
-       ARDMediathek.name():ARDMediathek,
-       ZDFMediathek.name():ZDFMediathek,
-       ARTEMediathek.name():ARTEMediathek,
-       DreiSatMediathek.name():DreiSatMediathek,
-       #ORFMediathek.name():ORFMediathek,
-       #NDRMediathek.name():NDRMediathek,
-       KIKA.name():KIKA
-      }
-  def getAvaibleMediathekTypes(self):
-    return sorted(self.avaibleMediathekes.keys())
 
-  def getMediathek(self,mediathekName, gui):
-    return self.avaibleMediathekes[mediathekName](gui);
+class MediathekFactory(object):
+    def __init__(self):
+        self.avaibleMediathekes = {
+            ARDMediathek.name(): ARDMediathek,
+            ZDFMediathek.name(): ZDFMediathek,
+            ARTEMediathek.name(): ARTEMediathek,
+            DreiSatMediathek.name(): DreiSatMediathek,
+            # ORFMediathek.name():ORFMediathek,
+            # NDRMediathek.name():NDRMediathek,
+            KIKA.name(): KIKA
+        }
+
+    def getAvaibleMediathekTypes(self):
+        return sorted(self.avaibleMediathekes.keys())
+
+    def getMediathek(self, mediathekName, gui):
+        return self.avaibleMediathekes[mediathekName](gui)
