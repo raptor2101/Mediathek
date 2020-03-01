@@ -25,10 +25,12 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 
+
 from bs4 import BeautifulSoup
 import json
 import hashlib
 from mediathek import ComplexLink
+from mediathek.factory import MediathekFactory
 
 regex_findLink = re.compile("mms://[^\"]*wmv")
 
@@ -152,10 +154,81 @@ class SimpleXbmcGui(object):
             url = "%s?type=%s" % (sys.argv[0], name)
             xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=url, listitem=listItem, isFolder=True)
 
-    def openMenuContext(self):
-        self.dialogProgress = xbmcgui.DialogProgress()
+    def getParams(self):
+        paramDict = {}
+        try:
+            if sys.argv[2]:
+                paramPairs = sys.argv[2][1:].split("&")
+                for paramsPair in paramPairs:
+                    paramSplits = paramsPair.split('=')
+                    if (len(paramSplits)) == 2:
+                        paramDict[paramSplits[0]] = paramSplits[1]
+        except:
+            errorOK()
+        return paramDict
 
-    def closeMenuContext(self):
+    def renderMenu(self):
+        progress = xbmcgui.DialogProgress()
+        params = self.getParams();
+        mediathekName = params.get("type", "")
+        action = params.get("action", "")
+
+
+
+        self.log("Quality: %s" % self.quality)
+        self.log("argv[0]: %s" % sys.argv[0])
+        self.log("argv[1]: %s" % sys.argv[1])
+        factory = MediathekFactory()
+
+        if mediathekName == "":
+            if action == "":
+                self.addSearchButton(None)
+                self.listAvailableMediathekes(factory.getAvaibleMediathekTypes())
+            else:
+                result = self.keyboardInput()
+                if result.isConfirmed():
+                    searchText = str(result.getText())
+                    for name in factory.getAvaibleMediathekTypes():
+                        mediathek = factory.getMediathek(name, self)
+                        if mediathek.isSearchable():
+                            mediathek.searchVideo(searchText)
+                else:
+                    self.back()
+
+        else:
+            cat = int(params.get("cat", 0))
+            mediathek = factory.getMediathek(mediathekName, self)
+
+            if action == "openTopicPage":
+                link = urllib.parse.unquote_plus(params.get("link", ""))
+                self.log(link)
+                mediathek.buildPageMenu(link, 0)
+            elif action == "openPlayList":
+                link = urllib.parse.unquote_plus(params.get("link", ""))
+                self.log(link)
+                remotePlaylist = mediathek.loadPage(link)
+                self.playPlaylist(remotePlaylist)
+            elif action == "openMenu":
+                path = params.get("path", "0")
+                mediathek.buildMenu(path)
+            elif action == "search":
+                result = self.keyboardInput()
+                if result.isConfirmed():
+                    searchText = str(result.getText())
+                    mediathek.searchVideo(searchText)
+                else:
+                    self.back()
+            elif action == "openJsonPath":
+                path = params.get("path", "0")
+                callhash = params.get("callhash", "0")
+                mediathek.buildJsonMenu(path, callhash, 0)
+            elif action == "openJsonLink":
+                link = urllib.parse.unquote_plus(params.get("link", ""))
+                mediathek.playVideoFromJsonLink(link)
+            else:
+                if mediathek.isSearchable():
+                    self.addSearchButton(mediathek)
+                mediathek.displayCategories()
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
     def getHomeDir(self):
