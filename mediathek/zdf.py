@@ -161,6 +161,7 @@ class ZDFMediathek(Mediathek):
         self.gui.play(links)
 
     def extractLinks(self, jsonObject):
+        self.gui.log(json.dumps(jsonObject, sort_keys=True));
         links = {}
         for formitaete in jsonObject["formitaeten"]:
             url = formitaete["url"]

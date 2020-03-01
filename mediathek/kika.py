@@ -90,8 +90,8 @@ class KIKA(Mediathek):
         xmlPage = self.loadPage(self.rootLink + pageLink)
         channel = self.regex_xml_channel.search(xmlPage)
         if channel is not None:
-            channel = unicode(channel.group(1), "UTF-8")
-        title = unicode(self.regex_xml_title.search(xmlPage).group(1), "UTF-8")
+            channel = channel.group(1)
+        title = self.regex_xml_title.search(xmlPage).group(1)
         image = self.regex_xml_image.search(xmlPage).group(1).replace("**aspectRatio**", "tlarge169").replace("**width**", "1472")
 
         self.gui.log("%s %s" % (title, image))
@@ -99,7 +99,7 @@ class KIKA(Mediathek):
         for match in self.regex_xml_videoLink.finditer(xmlPage):
             profile = match.group(1)
             directLink = match.group(2)
-            # self.gui.log("%s %s"%(profile,directLink))
+            #self.gui.log("%s %s"%(profile,directLink))
             if "MP4 Web S" in profile:
                 links[0] = SimpleLink(directLink, 0)
             if "MP4 Web L" in profile:
@@ -109,7 +109,7 @@ class KIKA(Mediathek):
             if "MP4 Web XL" in profile:
                 links[3] = SimpleLink(directLink, 0)
 
-        date = time.strptime(unicode(self.regex_xml_time.search(xmlPage).group(1), "UTF-8"), u"%d.%m.%Y %H:%M")
+        date = time.strptime(self.regex_xml_time.search(xmlPage).group(1), u"%d.%m.%Y %H:%M")
         if channel is not None:
             return DisplayObject(channel, title, image, "", links, True, date)
         else:

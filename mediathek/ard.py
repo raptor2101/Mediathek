@@ -91,7 +91,7 @@ class ARDMediathek(Mediathek):
         return False
 
     def extractJsonFromPage(self, link):
-        pageContent = self.loadPage(link).decode('UTF-8')
+        pageContent = self.loadPage(link)
         content = self.regex_ExtractJson.search(pageContent).group(1)
         return json.loads(content)
 
@@ -134,8 +134,8 @@ class ARDMediathek(Mediathek):
         pageSize = paginationContent["pageSize"]
         pageNumber = paginationContent["pageNumber"]
 
-        variables = urllib.quote_plus(self.variables % (widgetId, client, pageNumber, pageSize))
-        extension = urllib.quote_plus(self.extension)
+        variables = urllib.parse.quote_plus(self.variables % (widgetId, client, pageNumber, pageSize))
+        extension = urllib.parse.quote_plus(self.extension)
         return self.publicGateway % (variables, extension)
 
     def buildJsonMenu(self, path, callhash, initCount):
@@ -177,7 +177,8 @@ class ARDMediathek(Mediathek):
 
         duration = teaserContent["duration"]
         date = self.__getBroadcastedOnDate(teaserContent)
-        videoLink = base64.b64encode(self.playerLink % teaserContent["links"]["target"]["id"])
+        videoLink = self.playerLink % teaserContent["links"]["target"]["id"];
+        videoLink = base64.b64encode(videoLink.encode())
         displayObject = DisplayObject(title, subTitle, picture, "", videoLink, "JsonLink", date, duration)
         self.gui.buildVideoLink(displayObject, self, 0)
 
@@ -185,7 +186,8 @@ class ARDMediathek(Mediathek):
         title = teaserContent["shortTitle"]
         subTitle = None
         picture = self.getPictureLink(teaserContent["images"], jsonContent)
-        videoLinks = base64.b64encode(self.getVideoLinks(teaserContent["links"], jsonContent))
+        videoLinks = self.getVideoLinks(teaserContent["links"], jsonContent);
+        videoLinks = base64.b64encode(videoLinks.encode())
         date = self.__getBroadcastedOnDate(teaserContent)
         duration = teaserContent["duration"]
         if 'type' in teaserContent and teaserContent[u'type'] == u"live":
@@ -211,7 +213,7 @@ class ARDMediathek(Mediathek):
         return None
 
     def playVideoFromJsonLink(self, link):
-        link = base64.b64decode(link)
+        link = base64.b64decode(link).decode()
         # WTF OHHHHHHHHH JAAAAAA - es geht noch sinnloser...
         self.gui.log("Play from JSON Link %s" % link)
         jsonContent = self.extractJsonFromPage(link)

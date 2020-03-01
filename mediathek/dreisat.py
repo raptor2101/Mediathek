@@ -104,7 +104,8 @@ class DreiSatMediathek(Mediathek):
         else:
             history_counter = 0
         mainPage = self.loadPage(link)
-        matches = list(self.regex_objectLink.finditer(mainPage))
+        matches = self.regex_objectLink.finditer(mainPage);
+        matches = list(matches)
         counter = len(matches) + initCount
 
         objectIds = []
@@ -128,8 +129,8 @@ class DreiSatMediathek(Mediathek):
         videoNode = xmlPage.getElementsByTagName("video")[0]
         informationNode = xmlPage.getElementsByTagName("information")[0]
         detailsNode = xmlPage.getElementsByTagName("details")[0]
-        title = unicode(self.readText(informationNode, "title"))
-        description = unicode(self.readText(informationNode, "detail"))
+        title = str(self.readText(informationNode, "title"))
+        description = str(self.readText(informationNode, "detail"))
         basename = self.readText(detailsNode, "basename")
         length = self.readText(detailsNode, "lengthSec")
         date = self.parseDate(self.readText(detailsNode, "airtime"))
@@ -183,7 +184,7 @@ class DreiSatMediathek(Mediathek):
     def readText(self, node, textNode):
         try:
             node = node.getElementsByTagName(textNode)[0].firstChild
-            return unicode(node.data)
+            return str(node.data)
         except:
             return ""
 
@@ -213,7 +214,7 @@ class DreiSatMediathek(Mediathek):
         dateString = self.readText(itemNode, "pubDate")
         pubDate = self.parseDate(dateString)
         descriptionNode = itemNode.getElementsByTagName("description")[0].firstChild.data
-        description = unicode(descriptionNode)
+        description = str(descriptionNode)
         picture = ""
         pictureNodes = itemNode.getElementsByTagName("media:thumbnail")
         if len(pictureNodes) > 0:

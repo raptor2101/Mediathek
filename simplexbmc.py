@@ -52,7 +52,7 @@ class SimpleXbmcGui(object):
             os.mkdir(self.plugin_profile_dir)
 
     def log(self, msg):
-        if not isinstance(msg, (str, unicode)):
+        if not isinstance(msg, (bytes, str)):
             xbmc.log("[%s]: %s" % (__plugin__, type(msg)))
         else:
             xbmc.log("[%s]: %s" % (__plugin__, msg.encode('utf8')))
@@ -69,27 +69,28 @@ class SimpleXbmcGui(object):
         if displayObject.isPlayable:
             if displayObject.isPlayable == "PlayList":
                 link = displayObject.link[0]
-                url = "%s?type=%s&action=openPlayList&link=%s" % (sys.argv[0], mediathek.name(), urllib.quote_plus(link.basePath))
+                url = "%s?type=%s&action=openPlayList&link=%s" % (sys.argv[0], mediathek.name(), urllib.parse.quote_plus(link.basePath))
                 listItem.setProperty('IsPlayable', 'true')
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, listItem, False, objectCount)
             elif displayObject.isPlayable == "JsonLink":
                 link = displayObject.link
-                url = "%s?type=%s&action=openJsonLink&link=%s" % (sys.argv[0], mediathek.name(), urllib.quote_plus(link))
+                url = "%s?type=%s&action=openJsonLink&link=%s" % (sys.argv[0], mediathek.name(), urllib.parse.quote_plus(link))
                 listItem.setProperty('IsPlayable', 'true')
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, listItem, False, objectCount)
             else:
-                link = self.extractLink(displayObject.link)
-                if isinstance(link, ComplexLink):
-                    self.log("PlayPath:" + link.playPath)
-                    listItem.setProperty("PlayPath", link.playPath)
-                listItem.setProperty('IsPlayable', 'true')
-                xbmcplugin.addDirectoryItem(int(sys.argv[1]), link.basePath, listItem, False, objectCount)
+                if(len(displayObject.link) > 0):
+                  link = self.extractLink(displayObject.link)
+                  if isinstance(link, ComplexLink):
+                      self.log("PlayPath:" + link.playPath)
+                      listItem.setProperty("PlayPath", link.playPath)
+                  listItem.setProperty('IsPlayable', 'true')
+                  xbmcplugin.addDirectoryItem(int(sys.argv[1]), link.basePath, listItem, False, objectCount)
         else:
             listItem.setIsFolder(True)
             try:
-                url = "%s?type=%s&action=openTopicPage&link=%s" % (sys.argv[0], mediathek.name(), urllib.quote_plus(displayObject.link))
+                url = "%s?type=%s&action=openTopicPage&link=%s" % (sys.argv[0], mediathek.name(), urllib.parse.quote_plus(displayObject.link))
             except:
-                url = "%s?type=%s&action=openTopicPage&link=%s" % (sys.argv[0], mediathek.name(), urllib.quote_plus(displayObject.link.encode('utf-8')))
+                url = "%s?type=%s&action=openTopicPage&link=%s" % (sys.argv[0], mediathek.name(), urllib.parse.quote_plus(displayObject.link.encode('utf-8')))
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), url, listItem, True, objectCount)
 
     def BuildMetaData(self, displayObject):
@@ -125,12 +126,12 @@ class SimpleXbmcGui(object):
 
     def storeJsonFile(self, jsonObject, additionalIdentifier=None):
         hashGenerator = hashlib.md5()
-        hashGenerator.update(sys.argv[2])
+        hashGenerator.update(str(sys.argv[2]).encode('utf-8'))
         if additionalIdentifier is not None:
             hashGenerator.update(additionalIdentifier)
         callhash = hashGenerator.hexdigest()
         storedJsonFile = os.path.join(self.plugin_profile_dir, "%s.json" % callhash)
-        with open(storedJsonFile, 'wb') as output:
+        with open(storedJsonFile, 'w') as output:
             json.dump(jsonObject, output)
         return callhash
 
@@ -180,7 +181,7 @@ class SimpleXbmcGui(object):
     def readText(self, node, textNode):
         try:
             node = node.getElementsByTagName(textNode)[0].firstChild
-            return unicode(node.data)
+            return str(node.data)
         except:
             return ""
 

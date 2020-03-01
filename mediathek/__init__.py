@@ -64,13 +64,14 @@ class Mediathek(object):
         safe_url = url.replace(" ", "%20").replace("&amp;", "&")
         self.gui.log("download %s" % safe_url)
         content = requests.get(safe_url, allow_redirects=True)
-        if content.encoding is not None:
-            return content.text.encode(content.encoding)
-        else:
-            return content.text
+        return content.text;
+        #if content.encoding is not None:
+        #    return content.text.encode(content.encoding)
+        #else:
+        #    return content.text
 
     def buildMenu(self, path, treeNode=None):
-        if isinstance(path, (str, unicode)):
+        if isinstance(path, (str, bytes)):
             path = path.split('.')
         if len(path) > 0:
             index = int(path.pop(0))
